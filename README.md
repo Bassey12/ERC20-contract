@@ -9,7 +9,7 @@ npx hardhat init
 # Write the ERC20 Contract:
 Create a new Solidity contract file, e.g., MyToken.sol, and add the following code to define your ERC20 contract:
 
-// SPDX-License-Identifier: MIT
+<// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
