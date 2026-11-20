@@ -1,0 +1,22 @@
+[package]
+name = "nexus"
+version = "0.1.0"
+description = "Nexus Anchor program: devnet-first capsule/token launch with two-tier referrals, proportional allocation, 72h vesting and early-claim burns."
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "nexus"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-spl = "0.31.1"
+nexus-math = { path = "../../crates/nexus-math" }
