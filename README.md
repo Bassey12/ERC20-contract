@@ -17,6 +17,12 @@ This repository now contains **both halves of the full Nexus build**
   Pages on every push to `main` (Settings → Pages → Source:
   GitHub Actions). `vite.config.ts` uses `base: './'` so the site
   works under the repo path.
+  > **Note (2026-11-20):** this workflow file is in the local
+  > source at `.github/workflows/deploy.yml`, but GitHub's API
+  > blocked pushing it from Muse (403, App lacks Actions /
+  > workflow permission). Add it manually in the GitHub web UI
+  > at `.github/workflows/deploy.yml`, or grant the App Actions
+  > access, then the first workflow run will publish the site.
 - **GitHub target (confirmed 2026-11-20): `Bassey12/ERC20-contract`,
   branch `main`, head `0845c868598f78d2fdc16342dd9e72f14a869cbf`.**
   That repo currently contains only a `README.md`; pushing this
