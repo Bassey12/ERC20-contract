@@ -1,0 +1,8 @@
+[package]
+name = "nexus-math"
+version = "0.1.0"
+edition = "2021"
+description = "Pure maths for the Nexus Anchor program (referrals, allocation, vesting, penalties). No Solana/Anchor dependencies, so it can be tested with plain cargo test."
+license = "MIT OR Apache-2.0"
+
+[dependencies]
