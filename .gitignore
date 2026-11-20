@@ -1,0 +1,13 @@
+# Build outputs — never commit
+node_modules/
+dist/
+dist-ssr/
+target/
+*.local
+.DS_Store
+# Never commit keys or secrets of any kind
+*.pem
+*.key
+id_rsa*
+.env
+.env.*
