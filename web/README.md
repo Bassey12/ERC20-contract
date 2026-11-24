@@ -28,10 +28,38 @@ no keys — never paste a private key anywhere in this project.
 
 ## What is inside
 
-- **8 sections:** Pool, Capsules, Vault, Earn, Pirates, Studio,
-  Contract, AI Guide — plus a six-step “entire system” map
-  (Capsules → Vault → Referrals 10/2/88 → Finalise/Launch →
-  Vest/Claim/Burn → Pirates + Studio).
+- **Beginner-first redesign (2026-11-24): 4 bottom tabs only,
+  mobile-first — Play, Rewards, Invite, Help.** Plain language
+  throughout the main UI (no vesting / escrow / Merkle / PDA /
+  Anchor / SPL words). Browse and preview capsules *before* any
+  wallet connection; the wallet is only asked for when joining,
+  behind a plain-language explainer and a 1-tap demo wallet.
+  One primary action per screen, big type, generous whitespace,
+  one accent colour (teal).
+  - **Play:** "Open a capsule, join the launch" — 3 big capsule
+    cards, Free first ("Try it free, no wallet needed"), spring
+    flip-to-open, confetti on the first free open; join with
+    amount presets and a split preview shown before committing;
+    Pirates crews inside Play, labelled "Game points — not money,
+    not tokens".
+  - **Rewards (was Vault):** "Your share", "When you can take
+    it" as a Now / 1 day / 2 days / 3 days timeline, a slider in
+    plain hours, early-take cost in plain words ("Take it early
+    and you keep a little less — most of that little bit
+    disappears forever").
+  - **Invite (was Earn):** "Invite a friend — you both get a
+    share", one copy-link button, calculator ("If your friend
+    joins with 1, you get 0.10") — no percentages as the headline.
+  - **Help (was AI Guide):** plain questions, answers only from
+    approved facts, "I don't know" for odds/prices.
+  - **Removed / hidden from users:** Pool page, Contract page,
+    Studio campaign dashboard, supply-bucket tables, cap progress
+    in SOL. All of that now lives on a single "For builders &
+    studios" page, reached only from a small footer link — not in
+    the main nav, not on the home screen. It still shows the
+    14 worked-example checks, penalty table, Gates 1–5, program
+    id, authority address, Studio packages and the campaign
+    dashboard.
 - **Exact v2.0 maths** (`src/lib/math.ts`, a TypeScript mirror of
   `contracts/crates/nexus-math`): 1B supply (400M presale, 100M
   airdrop, remaining 500M **RECOMMENDED** split 150M liquidity /
@@ -55,12 +83,15 @@ no keys — never paste a private key anywhere in this project.
   evidence classes, a Contract page with 14 live worked-example
   checks, and an AI Guide that answers only from approved facts
   and says “unknown” for odds and prices.
-- **Design:** trench-ocean system — deep navy, teal-to-cyan
-  accent, glass surfaces, soft shadows, sticky glass pill tab
-  bar, gradient hero with floating capsule art, animated shimmer
-  progress bar, staggered fade-up entrances, capsule pop reveals,
-  card lift/zoom on hover, pulsing live indicators, button press
-  states. All motion respects `prefers-reduced-motion`.
+- **Design:** light, clean, banking-like (Coinbase / Revolut /
+  Robinhood / Cash App / Mercury / ChangeNOW references; Polygon
+  onboarding 2026 — ~70% abandon at the wallet step, so the
+  wallet is removed from entry): white cards on a pale
+  background, dark ink, one teal accent, big type, generous
+  whitespace, fixed 4-tab bottom nav, spring card flips,
+  staggered fade-ups, confetti on first free open, progress
+  shimmer, button press states, instant feedback on every tap.
+  All motion respects `prefers-reduced-motion`.
 
 ## Deploy to GitHub Pages
 
