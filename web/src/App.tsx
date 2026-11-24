@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import {
-  HARD_CAP_SOL, LAMPORTS_PER_SOL,
+  AIRDROP_TOKENS, HARD_CAP_SOL, LAMPORTS_PER_SOL, PRESALE_TOKENS, TOTAL_SUPPLY,
   allocationFor, claimableNow, fmtSol, fmtTokens,
   isRetail, penaltyRatePercent, penaltySplit, referralSplit,
   vestedAmount, workedChecks,
 } from './lib/math'
-import { BADGES, CAPSULES, CREWS, DEMO_CAMPAIGNS, PACKAGES, PLACES, SHOP_ITEMS, guideAnswer } from './lib/data'
+import { BADGES, CAPSULES, CREWS, DEMO_AIRDROP, DEMO_CAMPAIGNS, PACKAGES, PLACES, SHOP_ITEMS, guideAnswer } from './lib/data'
 import type { Campaign, Crew, Place } from './lib/data'
 
 // Kabu redesign (2026-11-24). Reference: kabu.xyz — light, warm,
@@ -38,6 +38,10 @@ interface Deposit {
   upline: number
   vault: number
   referrer: string
+  /** Airdrop vaults: no SOL was put in — the share is a fixed demo
+   *  allocation, and it unlocks linearly over 72h (never retail-ready). */
+  isAirdrop?: boolean
+  airdropAllocation?: number // token base units
 }
 
 function fakeAddress() {
@@ -86,7 +90,7 @@ export default function App() {
   const [notice, setNotice] = useState('')
   const [managedId, setManagedId] = useState<number | null>(null)
   const [modalStep, setModalStep] = useState<'detail' | 'confirm' | 'success'>('detail')
-  const [lastClaim, setLastClaim] = useState<{ net: number; penalty: number; gross: number } | null>(null)
+  const [lastClaim, setLastClaim] = useState<{ net: number; penalty: number; gross: number; burned: number; escrow: number } | null>(null)
   const [visibleVaults, setVisibleVaults] = useState(5)
   // Kabu-style progression — all from real simulated actions in this session.
   const [shards, setShards] = useState(0)
@@ -94,6 +98,10 @@ export default function App() {
   const [claimedDate, setClaimedDate] = useState('')
   const [ownedItems, setOwnedItems] = useState<string[]>([])
   const [charIndex, setCharIndex] = useState(0)
+  // Airdrop eligibility check — the real list is empty (not approved yet).
+  const [airdropName, setAirdropName] = useState('')
+  const [airdropWallet, setAirdropWallet] = useState('')
+  const [airdropResult, setAirdropResult] = useState<'idle' | 'not-found' | 'demo' | 'claimed'>('idle')
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState<{ x: number; y: number; px: number; py: number } | null>(null)
@@ -124,23 +132,29 @@ export default function App() {
   }, [crews, xp, shardsEarned, sortBy, connected, address])
   const myRank = leaderboard.findIndex((r) => r.you) + 1
 
-  const allocationForDeposit = (d: Deposit) =>
-    finalized ? allocationFor(d.amount, totalGross) : 0
+  const allocationForDeposit = (d: Deposit) => {
+    if (d.isAirdrop) return d.airdropAllocation || 0
+    return finalized ? allocationFor(d.amount, totalGross) : 0
+  }
   const unlockedForDeposit = (d: Deposit) => {
     const alloc = allocationForDeposit(d)
     if (!launched) return 0
+    // Airdrop shares always unlock linearly over 72h, like big joins.
+    if (d.isAirdrop) return vestedAmount(alloc, elapsedSeconds)
     return retail ? alloc : vestedAmount(alloc, elapsedSeconds)
   }
   const claimableForDeposit = (d: Deposit) =>
     claimableNow(unlockedForDeposit(d), claimedByVault[d.id] || 0)
   const penaltyForDeposit = (d: Deposit) => {
     const c = claimableForDeposit(d)
-    if (retail || c <= 0) return { rate: 0, penalty: 0, burned: 0, escrow: 0, net: c }
+    // Small (retail) presale joins pay no early cost; airdrop and big
+    // joins pay the banded penalty on what they take now.
+    if (!d.isAirdrop && retail || c <= 0) return { rate: 0, penalty: 0, burned: 0, escrow: 0, net: c }
     return penaltySplit(c, elapsedSeconds)
   }
   const ratioForDeposit = (d: Deposit) => {
     if (!launched) return 0
-    if (retail) return 100
+    if (!d.isAirdrop && retail) return 100
     return Math.min(100, Math.round((elapsedHours / 72) * 100))
   }
   const totalAllocation = useMemo(
@@ -205,6 +219,34 @@ export default function App() {
     setTab('vaults')
     setView('main')
   }
+  function checkAirdrop() {
+    const name = airdropName.trim().toLowerCase()
+    const wallet = airdropWallet.trim().toLowerCase()
+    if (!name && !wallet) { setNotice('Type a name or a wallet first, then check the list.'); return }
+    if (name === DEMO_AIRDROP.name.toLowerCase() || wallet === DEMO_AIRDROP.wallet.toLowerCase()) {
+      setAirdropResult('demo')
+      setNotice('That is the labelled DEMO entry — not a real approval. You can try the claim flow with it to see how it would work.')
+    } else {
+      setAirdropResult('not-found')
+      setNotice('Not on the list. There is no approved list yet, so nobody can claim free tokens yet.')
+    }
+  }
+  function claimDemoAirdrop() {
+    if (airdropResult !== 'demo') return
+    const d: Deposit = {
+      id: Date.now(), vaultId: newVaultId(), art: 1,
+      label: 'Airdrop vault — demo',
+      amount: 0, direct: 0, upline: 0, vault: 0,
+      referrer: 'Airdrop (demo)',
+      isAirdrop: true,
+      airdropAllocation: DEMO_AIRDROP.tokens * 1_000_000,
+    }
+    setDeposits((ds) => [...ds, d])
+    setAirdropResult('claimed')
+    setNotice(`Demo airdrop claimed — ${DEMO_AIRDROP.tokens.toLocaleString()} demo tokens are now in vault ${d.vaultId}. They unlock a little at a time over 3 days once the launch starts, like a big join. This is a demo only, not real tokens.`)
+    setTab('vaults')
+    setView('main')
+  }
   function openManage(d: Deposit) { setManagedId(d.id); setModalStep('detail'); setLastClaim(null) }
   function openTakeNow(d: Deposit) { setManagedId(d.id); setModalStep('confirm'); setLastClaim(null) }
   function closeModal() { setManagedId(null); setModalStep('detail'); setLastClaim(null) }
@@ -216,7 +258,7 @@ export default function App() {
     setClaimedByVault((m) => ({ ...m, [managed.id]: (m[managed.id] || 0) + c }))
     setBurned((b) => b + p.burned)
     setEscrow((e) => e + p.escrow)
-    setLastClaim({ net: p.net, penalty: p.penalty, gross: c })
+    setLastClaim({ net: p.net, penalty: p.penalty, gross: c, burned: p.burned, escrow: p.escrow })
     setModalStep('success')
   }
   function copyLink() {
@@ -591,7 +633,7 @@ export default function App() {
                 <div key={c.id} className="kv"><span><strong>🏴‍☠️ {c.name}</strong><br /><span className="small muted">{c.members} members · {c.points.toLocaleString()} XP — {c.challenge}</span></span>
                   <span className="row">
                     <button className="pill" onClick={() => setJoined((j) => j.includes(c.id) ? j : [...j, c.id])}>{joined.includes(c.id) ? 'Joined ✓' : 'Join crew'}</button>
-                    <button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50, shards: x.shards + 5 } : x))} disabled={!joined.includes(c.id)}>+50 XP</button>
+                    <button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50, shards: x.shards + 5 } : x))} disabled={!joined.includes(c.id)}>Complete challenge · +50 XP</button>
                   </span>
                 </div>
               ))}
@@ -672,8 +714,8 @@ export default function App() {
                             <div className="ratio-bar"><div style={{ width: `${ratio}%` }} /></div>
                             <div className="small muted">{launched ? `${fmtTokens(claimable)} ready now` : 'Not started yet'}</div>
                           </td>
-                          <td>{fmtSol(d.amount)} SOL</td>
-                          <td>{finalized ? `${fmtTokens(allocationForDeposit(d))} tokens` : '—'}</td>
+                          <td>{d.isAirdrop ? '— (free tokens)' : `${fmtSol(d.amount)} SOL`}</td>
+                          <td>{d.isAirdrop || finalized ? `${fmtTokens(allocationForDeposit(d))} tokens` : '—'}</td>
                           <td>
                             <div className="row" style={{ flexWrap: 'nowrap' }}>
                               <button className="pill" onClick={() => openManage(d)}>Manage</button>
@@ -697,6 +739,76 @@ export default function App() {
                 </div>
               </>
             )}
+                <div className="card fade-up d2" style={{ marginTop: 14 }}>
+                  <h2>Free tokens — Airdrop 🪂</h2>
+                  <p className="muted">Free tokens go only to people on an approved list. <strong>There is no approved list yet, so nobody can claim free tokens yet.</strong> Check a name or wallet against the list to see for yourself.</p>
+                  <div className="field"><label>Your name</label>
+                    <input value={airdropName} onChange={(e) => setAirdropName(e.target.value)} placeholder="e.g. Ada" />
+                  </div>
+                  <div className="field"><label>Your wallet (demo name or address)</label>
+                    <input value={airdropWallet} onChange={(e) => setAirdropWallet(e.target.value)} placeholder="e.g. DemoAda" />
+                  </div>
+                  <button className="btn" onClick={checkAirdrop}>Check if I am on the list</button>
+                  {airdropResult === 'not-found' && (
+                    <p className="notice" style={{ marginTop: 12 }} role="status">Not on the list — and the list itself does not exist yet. No approved list has been made, so nobody can claim free tokens yet. When a list exists, this is where you would check it.</p>
+                  )}
+                  {airdropResult === 'demo' && (
+                    <div style={{ marginTop: 12 }}>
+                      <p className="notice info" role="status">✓ DEMO entry found: {DEMO_AIRDROP.name} ({DEMO_AIRDROP.wallet}) — {DEMO_AIRDROP.tokens.toLocaleString()} demo tokens. This is a labelled demo entry only, not a real approval. Claiming it lets you try the whole flow: it opens an airdrop vault that unlocks a little at a time over 3 days once the launch starts, with the same early cost as a big join.</p>
+                      <button className="btn" onClick={claimDemoAirdrop}>Claim demo free tokens ({DEMO_AIRDROP.tokens.toLocaleString()} demo tokens)</button>
+                    </div>
+                  )}
+                  {airdropResult === 'claimed' && (
+                    <p className="notice info" style={{ marginTop: 12 }} role="status">Demo airdrop claimed — see your new airdrop vault in the table below. It unlocks over 3 days once the launch starts.</p>
+                  )}
+                  <p className="small muted">Try the demo entry: name <b>Ada Demo</b>, wallet <b>DEMOADA</b>. Any other name or wallet will come back as not on the list — because the real list does not exist yet.</p>
+                </div>
+
+                <div className="card fade-up d2" style={{ marginTop: 14 }}>
+                  <h2>Pool dashboard 🌊</h2>
+                  <p className="muted">Where the whole sale sits, in plain numbers. Everything here comes from real simulated activity in this demo.</p>
+                  <div className="kv"><span>Token supply in total</span><b>{TOTAL_SUPPLY.toLocaleString()} NEXUS</b></div>
+                  <div className="kv"><span>Presale pool</span><b>{PRESALE_TOKENS.toLocaleString()} (40%)</b></div>
+                  <div className="kv"><span>Airdrop pool</span><b>{AIRDROP_TOKENS.toLocaleString()} (10%)</b></div>
+                  <div className="kv"><span>Recommended remainder — NOT approved</span><b>500M: Liquidity 150M · Ecosystem 100M · Team 100M · Treasury 100M · Marketing 50M</b></div>
+                  <div className="kv"><span>Put in so far</span><b>{fmtSol(totalGross)} SOL of {HARD_CAP_SOL.toLocaleString()} SOL</b></div>
+                  <div className="progress"><div style={{ width: `${Math.min(100, (totalGross / (HARD_CAP_SOL * LAMPORTS_PER_SOL)) * 100)}%` }} /></div>
+                  <p className="small muted">{((totalGross / (HARD_CAP_SOL * LAMPORTS_PER_SOL)) * 100).toFixed(2)}% of the 15,000 SOL cap. The sale closes at the cap, or when it is closed by hand below.</p>
+                  <div className="kv"><span>Burned so far (from real early claims)</span><b>{fmtTokens(burned)} NEXUS</b></div>
+                  <div className="kv"><span>Rewards pot so far (from real early claims)</span><b>{fmtTokens(escrow)} NEXUS</b></div>
+                  <p className="small muted">Burned tokens disappear forever. The rewards pot is set aside for community rewards. Both only move when someone actually takes a share early in this demo.</p>
+                </div>
+
+                <div className="card fade-up d2" style={{ marginTop: 14 }}>
+                  <h2>Studio — run a campaign 🏢</h2>
+                  <p className="muted">For studios who want Nexus players to try their game. Packages are sold by written scope only — no checkout here, no payment taken in this demo.</p>
+                  <div className="grid cols-2">
+                    {PACKAGES.map((p) => (
+                      <article key={p.name} className="card" style={{ boxShadow: 'none' }}>
+                        <h3>{p.name}</h3>
+                        <div className="stat-num">{p.price}</div>
+                        <p className="small muted">{p.days} · USDC on Solana, by invoice only — no checkout.</p>
+                        <ul>{p.features.map((f) => <li key={f}>{f}</li>)}</ul>
+                        <span className={`tag ${p.tag === 'GATED' ? 'gated' : 'ok'}`}>{p.tag}</span>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="field"><label>Studio name</label><input value={newStudio} onChange={(e) => setNewStudio(e.target.value)} placeholder="e.g. Reef Games" /></div>
+                  <div className="field"><label>Campaign name</label><input value={newCampaign} onChange={(e) => setNewCampaign(e.target.value)} placeholder="e.g. Tutorial test" /></div>
+                  <div className="field"><label>Package</label><select value={newPkg} onChange={(e) => setNewPkg(e.target.value)}>{PACKAGES.map((p) => <option key={p.name}>{p.name}</option>)}</select></div>
+                  <button className="btn" onClick={createCampaign}>Create campaign</button>
+                  <p className="small muted">Refund policy: full refund before a campaign starts, 50% back within the first 3 days, none after day 3 unless Nexus fails to deliver what it promised. Unused reward budgets are always returned. This does not give back practice coins put into the launch — there is no way to get those back in this design.</p>
+                  <h3 style={{ marginTop: 18 }}>Campaign dashboard — evidence classes kept separate</h3>
+                  <p className="small muted">Sessions and wallets are <em>not</em> people. Only verified contributors count as verified — and test SOL is never sales or revenue.</p>
+                  <div className="table-wrap"><table>
+                    <thead><tr><th>Campaign</th><th>Sessions</th><th>Wallets</th><th>Verified</th><th>Test SOL</th></tr></thead>
+                    <tbody>{campaigns.map((c) => (
+                      <tr key={c.id}><td><strong>{c.name}</strong><br /><span className="small muted">{c.studio} · {c.pkg} · {c.status}</span></td><td>{c.sessions}</td><td>{c.wallets}</td><td>{c.contributors}</td><td>{c.testSol}</td></tr>
+                    ))}</tbody>
+                  </table></div>
+                  <p className="small muted">The full technical studio pages — contract, gates, and the 14 checks — are on <button className="linklike" onClick={() => setView('builders')}>For builders &amp; studios</button>.</p>
+                </div>
+
           </section>
         )}
 
@@ -706,6 +818,7 @@ export default function App() {
             <div className="card fade-up">
               <h2>You both get a share</h2>
               <p className="muted">When a friend joins through your link, you get a share of what they put in — and the person who invited you gets a smaller share. No promises, no guaranteed earnings.</p>
+              <p className="small muted">Only 2 levels: you, and the person who invited you. There is no third level, and nobody earns from people below that.</p>
               <p><code>{inviteLink}</code></p>
               <button className="btn" onClick={copyLink}>{copied ? 'Copied! ✓' : 'Copy my invite link'}</button>
               <div className="kv" style={{ marginTop: 12 }}><span>Friends who joined through you</span><b>{deposits.filter((d) => d.direct > 0).length}</b></div>
@@ -824,7 +937,7 @@ export default function App() {
                   <div>
                     <h2 style={{ marginTop: 0 }}>Vault {managed.vaultId}</h2>
                     <p className="muted small">Whoever controls this vault controls this share. In this demo, that is you.</p>
-                    <div className="kv"><span>You put in</span><b>{fmtSol(managed.amount)} SOL</b></div>
+                    <div className="kv"><span>You put in</span><b>{managed.isAirdrop ? '— (free tokens)' : `${fmtSol(managed.amount)} SOL`}</b></div>
                     <div className="kv"><span>Your share</span><b>{finalized ? `${fmtTokens(managedAlloc)} tokens` : 'Not fixed yet — the sale is still open'}</b></div>
                     <div className="kv"><span>Unlocked so far</span><b>{managedRatio}%</b></div>
                     <div className="kv"><span>Ready to take now</span><b>{fmtTokens(managedClaimable)} tokens</b></div>
@@ -847,6 +960,12 @@ export default function App() {
                 <div className="kv"><span>Early cost</span><b>{managedPreview.penalty > 0 ? `${fmtTokens(managedPreview.penalty)} tokens (${managedPreview.rate}%)` : 'None'}</b></div>
                 <div className="kv"><span>You keep</span><b>{fmtTokens(managedPreview.net)} tokens</b></div>
                 {managedPreview.penalty > 0 && (
+                  <>
+                    <div className="kv"><span>Of the early cost — disappears forever (burned)</span><b>{fmtTokens(managedPreview.burned)} tokens</b></div>
+                    <div className="kv"><span>Of the early cost — to the rewards pot</span><b>{fmtTokens(managedPreview.escrow)} tokens</b></div>
+                  </>
+                )}
+                {managedPreview.penalty > 0 && (
                   <p className="notice" style={{ marginTop: 12 }}>Take it early and you keep a little less — most of that little bit disappears forever.</p>
                 )}
                 <div className="row" style={{ marginTop: 18 }}>
@@ -860,7 +979,7 @@ export default function App() {
                 <h2 style={{ marginTop: 0 }}>Done — you took {fmtTokens(lastClaim.net)} tokens</h2>
                 <div className="success-box">
                   <p style={{ marginBottom: 6 }}>✓ {fmtTokens(lastClaim.net)} tokens are yours from vault {managed.vaultId}.</p>
-                  {lastClaim.penalty > 0 && <p className="small muted" style={{ marginBottom: 0 }}>Early cost was {fmtTokens(lastClaim.penalty)} tokens. Waiting until after 3 days costs nothing.</p>}
+                  {lastClaim.penalty > 0 && <p className="small muted" style={{ marginBottom: 0 }}>Early cost was {fmtTokens(lastClaim.penalty)} tokens — {fmtTokens(lastClaim.burned)} burned (gone forever) and {fmtTokens(lastClaim.escrow)} to the rewards pot. Waiting until after 3 days costs nothing.</p>}
                 </div>
                 <p className="muted">Next step: {managedClaimable > 0 ? 'there is still some left in this vault — come back when more has unlocked.' : 'this vault is empty now. Join again on Play to open a new vault, or invite a friend.'}</p>
                 <div className="row" style={{ marginTop: 18 }}>

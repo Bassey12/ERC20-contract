@@ -69,7 +69,15 @@ export const PLACES: Place[] = [
   { id: 'lookout', name: 'Rewards Lookout', emoji: '🔭', x: 84, y: 26, blurb: 'The best view in Nexus Bay.', detail: 'Watch your share unlock over 3 days, a little at a time. Small joins are ready in full when the launch starts.', go: 'vaults', colour: '#7cc4e8' },
   { id: 'hq', name: 'Studio HQ', emoji: '🏢', x: 30, y: 18, blurb: 'For the people building Nexus.', detail: 'Studios, campaigns, and the technical pages — kept here, out of the way, so players are never confused by them.', go: 'builders', colour: '#ffd166' },
   { id: 'help', name: 'Help Centre', emoji: '💬', x: 58, y: 78, blurb: 'Ask in plain words.', detail: 'Answers only from the approved Nexus facts. If we do not know, we say so — we never invent prices or odds.', go: 'help', colour: '#a8e6a1' },
+  { id: 'airdrop', name: 'Airdrop Grove', emoji: '🪂', x: 8, y: 28, blurb: 'Free tokens — if you are on the list.', detail: 'There is no approved list yet, so nobody can claim free tokens yet. You can still check a name here, and try the labelled demo entry to see how claiming would work.', go: 'vaults', colour: '#b79ced' },
+  { id: 'pool', name: 'Pool Pond', emoji: '🌊', x: 62, y: 48, blurb: 'Where the whole sale sits.', detail: 'The pool dashboard: the token buckets, how much of the 15,000 limit has been put in, and what has been burned or set aside from real claims in this demo.', go: 'vaults', colour: '#7cc4e8' },
 ]
+
+/** Airdrop — there is NO approved list yet in v2.0, so nobody can claim
+ *  free tokens yet. The one entry below is a DEMO entry only, so the
+ *  claim flow can be tried end-to-end in the simulation. It is not a
+ *  real approval, and the 1,000 demo tokens are not real tokens. */
+export const DEMO_AIRDROP = { name: 'Ada Demo', wallet: 'DEMOADA', tokens: 1000 }
 
 /** Shards Store — fun items only. Shards are practice points, NOT money, NOT tokens. */
 export interface ShopItem { id: string; name: string; emoji: string; cost: number; blurb: string }

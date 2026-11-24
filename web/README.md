@@ -55,14 +55,30 @@ no keys — never paste a private key anywhere in this project.
     joins with 1, you get 0.10") — no percentages as the headline.
   - **Help (was AI Guide):** plain questions, answers only from
     approved facts, "I don't know" for odds/prices.
-  - **Removed / hidden from users:** Pool page, Contract page,
-    Studio campaign dashboard, supply-bucket tables, cap progress
-    in SOL. All of that now lives on a single "For builders &
-    studios" page, reached only from a small footer link — not in
-    the main nav, not on the home screen. It still shows the
-    14 worked-example checks, penalty table, Gates 1–5, program
-    id, authority address, Studio packages and the campaign
-    dashboard.
+  - **Removed / hidden from users:** the Contract page
+    (program id, authority, Gates 1–5, the 14 checks) lives only
+    on a single "For builders & studios" page, reached from a
+    small footer link and the Studio HQ map pin — not in the main
+    nav, not on the home screen.
+  - **Full feature set (2026-11-25) — every v2.0 feature is
+    reachable from the Vaults tab or the map, not hidden:**
+    capsules (Free preview-only, Small ≤2, Big >2); presale join
+    with split shown before committing and the 15,000 SOL cap
+    enforced; Close the sale then Start the launch as two
+    separate steps; per-vault rows with Manage modal and Take-now
+    confirm screen showing gross / net / burned / escrow, then a
+    success state; **Airdrop** — check a name/wallet against the
+    list, which honestly says "No approved list yet, so nobody
+    can claim free tokens yet", plus a labelled demo entry
+    (Ada Demo / DEMOADA, 1,000 demo tokens) whose claim runs the
+    same 72h vesting + penalty maths; **Pool dashboard** —
+    supply buckets, cap progress, burned and rewards-pot totals
+    from real simulated claims; **Studio** — packages, create-a-
+    campaign form, dashboard keeping sessions / wallets /
+    verified contributors separate, refund policy shown. The
+    map has 8 pins (Capsule Pier, Vault Museum, Invite Arcade,
+    Rewards Lookout, Studio HQ, Help Centre, Airdrop Grove,
+    Pool Pond).
   - **In-app footer:** Home / How it works / FAQ / For builders
     &amp; studios, adapted from the shot's footer.
 - **Exact v2.0 maths** (`src/lib/math.ts`, a TypeScript mirror of
@@ -79,15 +95,18 @@ no keys — never paste a private key anywhere in this project.
   (500,000 is hour 36).
 - **Simulation controls:** connect a simulated wallet, deposit
   with a split preview, finalise, launch, advance the vesting
-  clock (+1h / +12h / +24h), claim with penalty / burn / escrow
-  figures, referral calculator and ledger, Pirates crews and
-  challenges (local points are **explicitly not tokens**), Studio
-  packages (Free Pilot / Studio 750 USDC / Growth 2,000 USDC)
-  with a campaign dashboard that keeps sessions, connected
-  wallets, verified contributors and test SOL in separate
-  evidence classes, a Contract page with 14 live worked-example
-  checks, and an AI Guide that answers only from approved facts
-  and says “unknown” for odds and prices.
+  clock (slider, +12h, jump to 3 days), claim with penalty /
+  burn / escrow figures, referral calculator and ledger, Pirates
+  crews and challenges (local points are **explicitly not
+  tokens**), Studio packages (Free Pilot / Studio 750 USDC /
+  Growth 2,000 USDC) with a campaign dashboard that keeps
+  sessions, connected wallets, verified contributors and test SOL
+  in separate evidence classes, a Contract page with 14 live
+  worked-example checks, and an AI Guide that answers only from
+  approved facts and says “unknown” for odds and prices.
+  Deliberately absent, as in v2.0: no SOL withdrawal, no
+  contribution refunds, no real money, no mainnet, no price —
+  the UI says "not in this design" where those are asked about.
 - **Design (Kabu redesign, 2026-11-24):** reference is
   kabu.xyz — light, warm, playful storybook world. Warm cream /
   pale peach background, footer deeper tan-peach, text dark
