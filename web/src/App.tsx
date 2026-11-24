@@ -1,27 +1,42 @@
 import { useMemo, useState } from 'react'
 import {
-  AIRDROP_TOKENS, BASE_UNITS_PER_TOKEN, HARD_CAP_SOL, LAMPORTS_PER_SOL,
-  PRESALE_TOKENS, TOTAL_SUPPLY, allocationFor, claimableNow, fmtSol, fmtTokens,
-  isRetail, penaltyRatePercent, penaltySplit, referralSplit, sol, tokens,
+  HARD_CAP_SOL, LAMPORTS_PER_SOL,
+  allocationFor, claimableNow, fmtSol, fmtTokens,
+  isRetail, penaltyRatePercent, penaltySplit, referralSplit,
   vestedAmount, workedChecks,
 } from './lib/math'
 import { CAPSULES, CREWS, DEMO_CAMPAIGNS, PACKAGES, guideAnswer } from './lib/data'
 import type { Campaign, Crew } from './lib/data'
 
-// Beginner-first redesign (2026-11-24).
-// 4 bottom tabs only: Play, Rewards, Invite, Help. Plain language in the
-// main UI — no vesting / escrow / Merkle / PDA / Anchor / SPL words.
-// Everything technical lives on the "For builders & studios" page,
-// reached only from a small footer link. Maths in lib/math.ts is unchanged.
-type Tab = 'play' | 'rewards' | 'invite' | 'help'
+// Dribbble vaults redesign (2026-11-24).
+// Reference: "Web3 Vaults & Lending Against Crypto UI UX Dashboard
+// Platform" by Extej, Dribbble shot 21827461. Dark navy + teal,
+// vaults as a TABLE, vault-detail modal, pill buttons, one idea
+// per screen. 4 bottom tabs only: Play, Vaults, Invite, Help.
+// Plain language in the main UI. Everything technical lives on
+// the "For builders & studios" page. Maths in lib/math.ts is unchanged.
+// Deliberately NOT copied from the shot: no lending/borrowing,
+// no APY, no charts, no health factor, no sidebar/top nav, and
+// none of its placeholder EUR/sEURO figures.
+type Tab = 'play' | 'vaults' | 'invite' | 'help'
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'play', label: 'Play', icon: '🎁' },
-  { id: 'rewards', label: 'Rewards', icon: '💎' },
+  { id: 'vaults', label: 'Vaults', icon: '🗄️' },
   { id: 'invite', label: 'Invite', icon: '🤝' },
   { id: 'help', label: 'Help', icon: '💬' },
 ]
 
-interface Deposit { id: number; amount: number; direct: number; upline: number; vault: number; referrer: string }
+interface Deposit {
+  id: number
+  vaultId: string
+  art: number // 0, 1 or 2 — colourful vault artwork gradient
+  label: string // "Small vault" / "Big vault"
+  amount: number
+  direct: number
+  upline: number
+  vault: number
+  referrer: string
+}
 
 function fakeAddress() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz123456789'
@@ -29,8 +44,11 @@ function fakeAddress() {
   for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * chars.length)]
   return `Demo${s.slice(0, 4)}`
 }
-
-const CONFETTI_COLORS = ['#0d9488', '#f59e0b', '#22d3ee', '#f472b6', '#a78bfa', '#34d399']
+function newVaultId() {
+  return `NEX-${Math.floor(10000 + Math.random() * 89999)}`
+}
+const ART_EMOJI = ['🧑‍🚀', '💎', '🐋']
+const CONFETTI_COLORS = ['#2dd4bf', '#f59e0b', '#22d3ee', '#f472b6', '#a78bfa', '#34d399']
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('play')
@@ -42,10 +60,10 @@ export default function App() {
   const [referrer, setReferrer] = useState('Ben')
   const [amountSol, setAmountSol] = useState('1')
   const [deposits, setDeposits] = useState<Deposit[]>([])
+  const [claimedByVault, setClaimedByVault] = useState<Record<number, number>>({})
   const [finalized, setFinalized] = useState(false)
   const [launched, setLaunched] = useState(false)
   const [elapsedHours, setElapsedHours] = useState(0)
-  const [claimedGross, setClaimedGross] = useState(0)
   const [burned, setBurned] = useState(0)
   const [escrow, setEscrow] = useState(0)
   const [opened, setOpened] = useState<Record<string, boolean>>({})
@@ -63,26 +81,48 @@ export default function App() {
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('Hi — ask me anything about Nexus in plain words. If I don\u2019t know the answer, I\u2019ll say so. I never invent prices or odds.')
   const [notice, setNotice] = useState('')
+  // Vault modal: one vault at a time, one idea per screen.
+  const [managedId, setManagedId] = useState<number | null>(null)
+  const [modalStep, setModalStep] = useState<'detail' | 'confirm' | 'success'>('detail')
+  const [lastClaim, setLastClaim] = useState<{ net: number; penalty: number; gross: number } | null>(null)
+  const [visibleVaults, setVisibleVaults] = useState(5)
 
   const totalGross = useMemo(() => deposits.reduce((a, d) => a + d.amount, 0), [deposits])
   const totalReferral = useMemo(() => deposits.reduce((a, d) => a + d.direct + d.upline, 0), [deposits])
   const retail = isRetail(totalGross)
-  const allocation = finalized ? allocationFor(totalGross, totalGross) : 0
-  // Single-wallet simulation: this wallet is the only contributor, so its
-  // allocation is the full presale pool once the sale closes. With more
-  // wallets it would be gross/total x 400,000,000.
   const elapsedSeconds = elapsedHours * 3600
-  // Small joins are ready in full once the launch starts; big joins unlock
-  // a little at a time over 3 days. (math.ts vestedAmount is the generic
-  // linear rule used for big joins; the tier rule itself is applied here.)
-  const vested = launched ? (retail ? allocation : vestedAmount(allocation, elapsedSeconds)) : 0
-  const claimable = claimableNow(vested, claimedGross)
+  // Per-vault share: this join's part of the whole sale, times 400,000,000.
+  // Single-wallet simulation: this wallet is the only contributor, so the
+  // vaults together hold the full presale pool once the sale closes.
+  const allocationForDeposit = (d: Deposit) =>
+    finalized ? allocationFor(d.amount, totalGross) : 0
+  const unlockedForDeposit = (d: Deposit) => {
+    const alloc = allocationForDeposit(d)
+    if (!launched) return 0
+    return retail ? alloc : vestedAmount(alloc, elapsedSeconds)
+  }
+  const claimableForDeposit = (d: Deposit) =>
+    claimableNow(unlockedForDeposit(d), claimedByVault[d.id] || 0)
+  const penaltyForDeposit = (d: Deposit) => {
+    const c = claimableForDeposit(d)
+    if (retail || c <= 0) return { rate: 0, penalty: 0, burned: 0, escrow: 0, net: c }
+    return penaltySplit(c, elapsedSeconds)
+  }
+  const ratioForDeposit = (d: Deposit) => {
+    if (!launched) return 0
+    if (retail) return 100
+    return Math.min(100, Math.round((elapsedHours / 72) * 100))
+  }
+  const totalAllocation = useMemo(
+    () => deposits.reduce((a, d) => a + allocationForDeposit(d), 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [deposits, finalized, totalGross],
+  )
+  const totalClaimable = deposits.reduce((a, d) => a + claimableForDeposit(d), 0)
   const rate = retail ? 0 : penaltyRatePercent(elapsedSeconds)
-  const preview = retail
-    ? { rate: 0, penalty: 0, burned: 0, escrow: 0, net: claimable }
-    : penaltySplit(claimable, elapsedSeconds)
   const checks = useMemo(() => workedChecks(), [])
   const passed = checks.filter((c) => c.pass).length
+  const managed = deposits.find((d) => d.id === managedId) || null
 
   const amountLamports = Math.round((parseFloat(amountSol) || 0) * LAMPORTS_PER_SOL)
   const split = referralSplit(amountLamports, hasReferrer, hasReferrer)
@@ -111,19 +151,35 @@ export default function App() {
     if (finalized) { setNotice('The sale is closed — joining is finished.'); return }
     if (amountLamports <= 0) { setNotice('Choose an amount above 0 first.'); return }
     if (totalGross + amountLamports > HARD_CAP_SOL * LAMPORTS_PER_SOL) { setNotice('That would go over the 15,000 limit for the whole sale.'); return }
-    setDeposits((d) => [...d, { id: Date.now(), amount: amountLamports, direct: split.direct, upline: split.upline, vault: split.vault, referrer: hasReferrer ? referrer : 'No one' }])
-    setNotice(`Done — you joined with ${fmtSol(amountLamports)} in practice coins. ${hasReferrer ? `${referrer} gets ${fmtSol(split.direct)}.` : ''} The launch gets ${fmtSol(split.vault)}.`)
-    setTab('rewards')
+    const d: Deposit = {
+      id: Date.now(), vaultId: newVaultId(), art: deposits.length % 3,
+      label: amountLamports <= 2 * LAMPORTS_PER_SOL ? 'Small vault' : 'Big vault',
+      amount: amountLamports, direct: split.direct, upline: split.upline, vault: split.vault,
+      referrer: hasReferrer ? referrer : 'No one',
+    }
+    setDeposits((ds) => [...ds, d])
+    setNotice(`Done — you joined with ${fmtSol(amountLamports)} in practice coins and opened vault ${d.vaultId}. ${hasReferrer ? `${referrer} gets ${fmtSol(split.direct)}.` : ''} The launch gets ${fmtSol(split.vault)}.`)
+    setTab('vaults')
   }
-  function claim() {
-    if (!launched || claimable <= 0) return
-    const p = retail ? { rate: 0, penalty: 0, burned: 0, escrow: 0, net: claimable } : penaltySplit(claimable, elapsedSeconds)
-    setClaimedGross((c) => c + claimable)
+  function openManage(d: Deposit) {
+    setManagedId(d.id); setModalStep('detail'); setLastClaim(null)
+  }
+  function openTakeNow(d: Deposit) {
+    setManagedId(d.id); setModalStep('confirm'); setLastClaim(null)
+  }
+  function closeModal() {
+    setManagedId(null); setModalStep('detail'); setLastClaim(null)
+  }
+  function confirmClaim() {
+    if (!managed) return
+    const c = claimableForDeposit(managed)
+    if (!launched || c <= 0) return
+    const p = retail ? { rate: 0, penalty: 0, burned: 0, escrow: 0, net: c } : penaltySplit(c, elapsedSeconds)
+    setClaimedByVault((m) => ({ ...m, [managed.id]: (m[managed.id] || 0) + c }))
     setBurned((b) => b + p.burned)
     setEscrow((e) => e + p.escrow)
-    setNotice(p.penalty > 0
-      ? `You took ${fmtTokens(p.net)} tokens. ${fmtTokens(p.penalty)} was the early cost — most of it disappeared forever.`
-      : `You took ${fmtTokens(p.net)} tokens. No early cost — well timed.`)
+    setLastClaim({ net: p.net, penalty: p.penalty, gross: c })
+    setModalStep('success')
   }
   function copyLink() {
     if (navigator.clipboard) navigator.clipboard.writeText(inviteLink).catch(() => undefined)
@@ -139,6 +195,10 @@ export default function App() {
   function goTab(t: Tab) { setTab(t); setView('main'); window.scrollTo({ top: 0 }) }
 
   const timelineDone = (h: number) => launched && elapsedHours >= h
+  const managedClaimable = managed ? claimableForDeposit(managed) : 0
+  const managedPreview = managed ? penaltyForDeposit(managed) : null
+  const managedAlloc = managed ? allocationForDeposit(managed) : 0
+  const managedRatio = managed ? ratioForDeposit(managed) : 0
 
   if (view === 'builders') {
     return (
@@ -270,7 +330,7 @@ export default function App() {
                 <div key={c.id} className={`flip fade-up d${i + 1}${opened[c.id] ? ' open' : ''}`}>
                   <div className="flip-inner">
                     <div className="flip-face">
-                      <div className="flip-emoji">{c.emoji}</div>
+                      <div className={`flip-art art-${'abc'[i]}`} aria-hidden="true">{c.emoji}</div>
                       <h3>{c.name} {c.id === 'free' && <span className="tag free-badge">Try it free</span>}</h3>
                       <p className="small muted">{c.tier} · {c.cost}</p>
                       <p>{c.blurb}</p>
@@ -278,7 +338,7 @@ export default function App() {
                       <span className="small muted">Opened {opens[c.id] || 0}×</span></div>
                     </div>
                     <div className="flip-face flip-back">
-                      <div className="flip-emoji">{c.emoji}</div>
+                      <div className={`flip-art art-${'abc'[i]}`} aria-hidden="true">{c.emoji}</div>
                       <h3>It opened — and that&apos;s all</h3>
                       <p>Just a preview. Nothing was paid, nothing was given, and this does not change your share.</p>
                       <button className="btn ghost small" onClick={() => setOpened((o) => ({ ...o, [c.id]: false }))}>Flip it back</button>
@@ -317,7 +377,7 @@ export default function App() {
                 ? <button className="btn" onClick={deposit} disabled={finalized}>Join with {fmtSol(amountLamports)} SOL in practice coins</button>
                 : <button className="btn" onClick={() => setShowWalletSheet(true)}>Join with practice money</button>}
               {finalized && <p className="small muted">The sale is closed — joining is finished.</p>}
-              {deposits.length > 0 && <p className="small" style={{ marginTop: 10 }}>You have put in <strong>{fmtSol(totalGross)} SOL</strong> in total — {retail ? 'a small join (2 or less)' : 'a big join (more than 2)'}. See Rewards for your share.</p>}
+              {deposits.length > 0 && <p className="small" style={{ marginTop: 10 }}>You have put in <strong>{fmtSol(totalGross)} SOL</strong> in total — {retail ? 'a small join (2 or less)' : 'a big join (more than 2)'}. See Vaults for your share.</p>}
             </section>
 
             <section className="card fade-up" style={{ marginTop: 16 }}>
@@ -326,7 +386,7 @@ export default function App() {
               {crews.map((c) => (
                 <div key={c.id} className="kv"><span><strong>🏴‍☠️ {c.name}</strong><br /><span className="small muted">{c.members} members · {c.points.toLocaleString()} game points — {c.challenge}</span></span>
                   <span className="row">
-                    <button className="btn ghost small" onClick={() => setJoined((j) => j.includes(c.id) ? j : [...j, c.id])}>{joined.includes(c.id) ? 'Joined ✓' : 'Join crew'}</button>
+                    <button className="pill" onClick={() => setJoined((j) => j.includes(c.id) ? j : [...j, c.id])}>{joined.includes(c.id) ? 'Joined ✓' : 'Join crew'}</button>
                     <button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50 } : x))} disabled={!joined.includes(c.id)}>+50 points</button>
                   </span>
                 </div>
@@ -337,35 +397,35 @@ export default function App() {
               <h2>How it works — in 3 steps</h2>
               <div className="map-steps">
                 <button className="map-step" onClick={() => goTab('play')}><span className="num">1</span><br /><strong>Open &amp; join</strong><br /><span className="small muted">Try free, then join with practice coins.</span></button>
-                <button className="map-step" onClick={() => goTab('rewards')}><span className="num">2</span><br /><strong>Wait for your share</strong><br /><span className="small muted">Small joins are ready in full. Big joins unlock over 3 days.</span></button>
+                <button className="map-step" onClick={() => goTab('vaults')}><span className="num">2</span><br /><strong>Wait for your share</strong><br /><span className="small muted">Small joins are ready in full. Big joins unlock over 3 days.</span></button>
                 <button className="map-step" onClick={() => goTab('invite')}><span className="num">3</span><br /><strong>Invite a friend</strong><br /><span className="small muted">You both get a share when they join.</span></button>
               </div>
             </section>
           </section>
         )}
 
-        {tab === 'rewards' && (
+        {tab === 'vaults' && (
           <section className="tab-panel">
-            <h1 style={{ fontSize: '1.7rem' }}>Your rewards</h1>
+            <h1 style={{ fontSize: '1.7rem' }}>Your vaults</h1>
+            <p className="muted">Each join opens a vault. Whoever controls a vault controls that share — in this demo, that is you. Your share is worked out when the sale closes: what you put in, divided by what everyone put in, times 400,000,000 tokens.</p>
             {deposits.length === 0 ? (
               <div className="card fade-up">
                 <h2>You haven&apos;t joined yet</h2>
-                <p className="muted">Your share will appear here once you join. Try a free capsule first — it costs nothing.</p>
+                <p className="muted">Your vaults will appear here once you join. Try a free capsule first — it costs nothing.</p>
                 <button className="btn" onClick={() => goTab('play')}>Go to Play</button>
               </div>
             ) : (
               <>
                 <div className="card fade-up">
                   <div className="stat-label">Your share {finalized ? '(fixed when the sale closed)' : '(not fixed yet — the sale is still open)'}</div>
-                  <div className="stat-num">{finalized ? `${fmtTokens(allocation)} tokens` : '—'}</div>
-                  <p className="muted small">Your share = what you put in ÷ what everyone put in × 400,000,000 tokens. In this demo you are the only person joining, so the full share is shown.</p>
+                  <div className="stat-num">{finalized ? `${fmtTokens(totalAllocation)} tokens` : '—'}</div>
                   <div className="kv"><span>You put in</span><b>{fmtSol(totalGross)} SOL</b></div>
                   <div className="kv"><span>Your join</span><b>{retail ? 'Small — 2 or less' : 'Big — more than 2'}</b></div>
-                  <div className="kv"><span>Ready to take now</span><b>{fmtTokens(claimable)} tokens</b></div>
+                  <div className="kv"><span>Ready to take now</span><b>{fmtTokens(totalClaimable)} tokens</b></div>
                 </div>
 
                 <div className="card fade-up d1" style={{ marginTop: 14 }}>
-                  <h2>When you can take it</h2>
+                  <h2>Next steps</h2>
                   <div className="timeline">
                     <div className={`timeline-step${timelineDone(0) ? ' done' : ''}`}><div className="timeline-dot">✓</div><div className="tl-label">Now<br />{retail ? 'All ready' : 'Nothing yet'}</div></div>
                     <div className={`timeline-step${timelineDone(24) ? ' done' : ''}`}><div className="timeline-dot">1d</div><div className="tl-label">After 1 day<br />About a third</div></div>
@@ -378,25 +438,58 @@ export default function App() {
                     <input type="range" min="0" max="72" value={elapsedHours} disabled={!launched} onChange={(e) => setElapsedHours(Number(e.target.value))} />
                   </div>
                   <div className="row">
-                    <button className="btn ghost small" onClick={() => setElapsedHours((h) => Math.min(72, h + 12))} disabled={!launched}>+12 hours</button>
-                    <button className="btn ghost small" onClick={() => setElapsedHours(72)} disabled={!launched}>Jump to 3 days</button>
+                    <button className="pill" onClick={() => setElapsedHours((h) => Math.min(72, h + 12))} disabled={!launched}>+12 hours</button>
+                    <button className="pill" onClick={() => setElapsedHours(72)} disabled={!launched}>Jump to 3 days</button>
                   </div>
-                  <div className="kv"><span>If you take it now, you keep</span><b>{fmtTokens(preview.net)} tokens</b></div>
-                  {preview.penalty > 0 && (
-                    <p className="notice" style={{ marginTop: 10 }}>Take it early and you keep a little less — {fmtTokens(preview.penalty)} tokens is the early cost right now. Most of that little bit disappears forever.</p>
-                  )}
+                  <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch', marginTop: 12 }}>
+                    <button className="btn ghost" onClick={() => { setFinalized(true); setNotice('Sale closed. Your share is now fixed.') }} disabled={finalized || deposits.length === 0}>1 · Close the sale</button>
+                    <button className="btn ghost" onClick={() => { setLaunched(true); setNotice('The launch started. The 3-day clock is running.') }} disabled={!finalized || launched}>2 · Start the launch</button>
+                  </div>
+                  {!launched && <p className="small muted">Close the sale first, then start the launch. You can only take your share after that.</p>}
                   {retail && launched && <p className="small muted">Small joins pay no early cost.</p>}
+                  <p className="small muted">A 1,000,000-token big share has 166,667 ready after 12 hours — not 500,000. 500,000 is after 36 hours.</p>
                 </div>
 
                 <div className="card fade-up d2" style={{ marginTop: 14 }}>
-                  <h2>Next steps</h2>
-                  <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                    <button className="btn ghost" onClick={() => { setFinalized(true); setNotice('Sale closed. Your share is now fixed.') }} disabled={finalized || deposits.length === 0}>1 · Close the sale</button>
-                    <button className="btn ghost" onClick={() => { setLaunched(true); setNotice('The launch started. The 3-day clock is running.') }} disabled={!finalized || launched}>2 · Start the launch</button>
-                    <button className="btn" onClick={claim} disabled={!launched || claimable <= 0}>3 · Take my share — {fmtTokens(claimable)} tokens</button>
+                  <h2>Vaults</h2>
+                  <div className="table-wrap"><table className="vault-table">
+                    <thead><tr><th>#</th><th>Vault</th><th>Vault ID</th><th>Unlocked</th><th>You put in</th><th>Your share</th><th>Actions</th></tr></thead>
+                    <tbody>{deposits.slice(0, visibleVaults).map((d, i) => {
+                      const ratio = ratioForDeposit(d)
+                      const preview = penaltyForDeposit(d)
+                      const claimable = claimableForDeposit(d)
+                      return (
+                        <tr key={d.id}>
+                          <td>{i + 1}</td>
+                          <td><div className={`vault-thumb art-${'abc'[d.art]}`} aria-hidden="true">{ART_EMOJI[d.art]}</div><div className="small" style={{ marginTop: 6 }}>{d.label}</div></td>
+                          <td><strong>{d.vaultId}</strong><br /><span className="small muted">via {d.referrer}</span></td>
+                          <td>
+                            <span className="ratio-num">{ratio}%</span>
+                            <div className="ratio-bar"><div style={{ width: `${ratio}%` }} /></div>
+                            <div className="small muted">{launched ? `${fmtTokens(claimable)} ready now` : 'Not started yet'}</div>
+                          </td>
+                          <td>{fmtSol(d.amount)} SOL</td>
+                          <td>{finalized ? `${fmtTokens(allocationForDeposit(d))} tokens` : '—'}</td>
+                          <td>
+                            <div className="row" style={{ flexWrap: 'nowrap' }}>
+                              <button className="pill" onClick={() => openManage(d)}>Manage</button>
+                              <button
+                                className={`pill${preview.penalty > 0 ? ' red' : ''}`}
+                                onClick={() => openTakeNow(d)}
+                                disabled={!launched || claimable <= 0}
+                              >Take now</button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}</tbody>
+                  </table></div>
+                  <div className="table-foot">
+                    <span className="small muted">Showing 1–{Math.min(visibleVaults, deposits.length)} of {deposits.length}</span>
+                    {deposits.length > visibleVaults && (
+                      <button className="pill wide" onClick={() => setVisibleVaults((v) => v + 5)}>Load more</button>
+                    )}
                   </div>
-                  {!launched && <p className="small muted">Close the sale first, then start the launch. You can only take your share after that.</p>}
-                  <p className="small muted">A small join of 1,000,000 tokens has 166,667 ready after 12 hours — not 500,000. 500,000 is after 36 hours.</p>
                 </div>
               </>
             )}
@@ -443,7 +536,7 @@ export default function App() {
               <p className="muted">I answer only from the approved Nexus facts. If I don&apos;t know, I&apos;ll say so — I never invent prices or odds. Never paste a password or secret phrase here.</p>
               <div className="row" style={{ marginBottom: 12 }}>
                 {['What happens if I put in 2?', 'How do invites pay?', 'What are the odds of winning?', 'What is it worth?', 'When can I take my share?', 'Is this real money?'].map((q) => (
-                  <button key={q} className="btn ghost small" onClick={() => { setQuestion(q); setAnswer(guideAnswer(q)) }}>{q}</button>
+                  <button key={q} className="pill" onClick={() => { setQuestion(q); setAnswer(guideAnswer(q)) }}>{q}</button>
                 ))}
               </div>
               <div className="field"><label>Ask a question</label>
@@ -463,9 +556,14 @@ export default function App() {
         )}
 
         <footer>
+          <div className="footer-links">
+            <button className="linklike" onClick={() => goTab('play')}>Home</button>
+            <button className="linklike" onClick={() => goTab('play')}>How it works</button>
+            <button className="linklike" onClick={() => goTab('help')}>FAQ</button>
+            <button className="linklike" onClick={() => { setView('builders'); window.scrollTo({ top: 0 }) }}>For builders &amp; studios</button>
+          </div>
           Nexus — practice only, no real money, no guaranteed returns.<br />
-          Founder &amp; CEO: Abasiofon Joseph Bassey.<br />
-          <button className="linklike" onClick={() => { setView('builders'); window.scrollTo({ top: 0 }) }}>For builders &amp; studios</button>
+          Founder &amp; CEO: Abasiofon Joseph Bassey.
         </footer>
       </main>
 
@@ -478,6 +576,70 @@ export default function App() {
           ))}
         </div>
       </nav>
+
+      {/* Vault detail modal — two columns over the dimmed table, as in the shot */}
+      {managed && (
+        <>
+          <div className="modal-backdrop" onClick={closeModal} />
+          <div className="modal" role="dialog" aria-label={`Vault ${managed.vaultId}`}>
+            {modalStep === 'detail' && (
+              <>
+                <div className="modal-cols">
+                  <div>
+                    <div className={`modal-art art-${'abc'[managed.art]}`} aria-hidden="true">{ART_EMOJI[managed.art]}</div>
+                    <div className="modal-art-label">Smart Vault · {managed.label}</div>
+                  </div>
+                  <div>
+                    <h2 style={{ marginTop: 0 }}>Vault {managed.vaultId}</h2>
+                    <p className="muted small">Whoever controls this vault controls this share. In this demo, that is you.</p>
+                    <div className="kv"><span>You put in</span><b>{fmtSol(managed.amount)} SOL</b></div>
+                    <div className="kv"><span>Your share</span><b>{finalized ? `${fmtTokens(managedAlloc)} tokens` : 'Not fixed yet — the sale is still open'}</b></div>
+                    <div className="kv"><span>Unlocked so far</span><b>{managedRatio}%</b></div>
+                    <div className="kv"><span>Ready to take now</span><b>{fmtTokens(managedClaimable)} tokens</b></div>
+                    <div className="kv"><span>Early cost if you take it now</span><b>{managedPreview && managedPreview.penalty > 0 ? `${fmtTokens(managedPreview.penalty)} tokens (${managedPreview.rate}%)` : 'None'}</b></div>
+                    <div className="kv"><span>Total after 3 days</span><b>{fmtTokens(managedAlloc)} tokens</b></div>
+                  </div>
+                </div>
+                <div className="row" style={{ marginTop: 18 }}>
+                  <button className="btn" style={{ flex: 1 }} onClick={() => setModalStep('confirm')} disabled={!launched || managedClaimable <= 0}>Take my share</button>
+                  <button className="pill" onClick={closeModal}>Close</button>
+                </div>
+                {!launched && <p className="small muted" style={{ marginTop: 10 }}>Close the sale and start the launch first — then you can take what is ready.</p>}
+              </>
+            )}
+            {modalStep === 'confirm' && managedPreview && (
+              <>
+                <h2 style={{ marginTop: 0 }}>Take from vault {managed.vaultId}?</h2>
+                <p className="muted">Check this before you confirm. Nothing moves until you tap the button below.</p>
+                <div className="kv"><span>You take now</span><b>{fmtTokens(managedClaimable)} tokens</b></div>
+                <div className="kv"><span>Early cost</span><b>{managedPreview.penalty > 0 ? `${fmtTokens(managedPreview.penalty)} tokens (${managedPreview.rate}%)` : 'None'}</b></div>
+                <div className="kv"><span>You keep</span><b>{fmtTokens(managedPreview.net)} tokens</b></div>
+                {managedPreview.penalty > 0 && (
+                  <p className="notice" style={{ marginTop: 12 }}>Take it early and you keep a little less — most of that little bit disappears forever.</p>
+                )}
+                <div className="row" style={{ marginTop: 18 }}>
+                  <button className="btn" style={{ flex: 1 }} onClick={confirmClaim}>Sign and Confirm</button>
+                  <button className="pill" onClick={() => setModalStep('detail')}>Back</button>
+                </div>
+              </>
+            )}
+            {modalStep === 'success' && lastClaim && (
+              <>
+                <h2 style={{ marginTop: 0 }}>Done — you took {fmtTokens(lastClaim.net)} tokens</h2>
+                <div className="success-box">
+                  <p style={{ marginBottom: 6 }}>✓ {fmtTokens(lastClaim.net)} tokens are yours from vault {managed.vaultId}.</p>
+                  {lastClaim.penalty > 0 && <p className="small muted" style={{ marginBottom: 0 }}>Early cost was {fmtTokens(lastClaim.penalty)} tokens. Waiting until after 3 days costs nothing.</p>}
+                </div>
+                <p className="muted">Next step: {managedClaimable > 0 ? 'there is still some left in this vault — come back when more has unlocked.' : 'this vault is empty now. Join again on Play to open a new vault, or invite a friend.'}</p>
+                <div className="row" style={{ marginTop: 18 }}>
+                  <button className="btn" style={{ flex: 1 }} onClick={closeModal}>Back to your vaults</button>
+                  <button className="pill" onClick={() => { closeModal(); goTab('play') }}>Open a new vault</button>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
 
       {showWalletSheet && (
         <>

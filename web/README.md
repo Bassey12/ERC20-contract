@@ -29,24 +29,27 @@ no keys — never paste a private key anywhere in this project.
 ## What is inside
 
 - **Beginner-first redesign (2026-11-24): 4 bottom tabs only,
-  mobile-first — Play, Rewards, Invite, Help.** Plain language
-  throughout the main UI (no vesting / escrow / Merkle / PDA /
-  Anchor / SPL words). Browse and preview capsules *before* any
+  mobile-first — Play, Vaults, Invite, Help.** Plain language
+  throughout the main UI. Browse and preview capsules *before* any
   wallet connection; the wallet is only asked for when joining,
   behind a plain-language explainer and a 1-tap demo wallet.
-  One primary action per screen, big type, generous whitespace,
-  one accent colour (teal).
+  One idea per screen.
   - **Play:** "Open a capsule, join the launch" — 3 big capsule
-    cards, Free first ("Try it free, no wallet needed"), spring
-    flip-to-open, confetti on the first free open; join with
-    amount presets and a split preview shown before committing;
-    Pirates crews inside Play, labelled "Game points — not money,
-    not tokens".
-  - **Rewards (was Vault):** "Your share", "When you can take
-    it" as a Now / 1 day / 2 days / 3 days timeline, a slider in
-    plain hours, early-take cost in plain words ("Take it early
-    and you keep a little less — most of that little bit
-    disappears forever").
+    cards with colourful artwork, Free first ("Try it free, no
+    wallet needed"), spring flip-to-open, confetti on the first
+    free open; join with amount presets and a split preview shown
+    before committing; Pirates crews inside Play, labelled "Game
+    points — not money, not tokens".
+  - **Vaults (was Rewards):** the Dribbble vault table — each
+    join becomes a vault row (# | Vault artwork | Vault ID, e.g.
+    NEX-83762 | Unlocked % with a green–yellow–red gradient bar |
+    You put in | Your share | Manage / Take now pill buttons),
+    "Showing 1–5 of N" + "Load more". Manage opens a two-column
+    modal: artwork + "Smart Vault" on the left, a plain breakdown
+    on the right (you put in X, your share is Y, ready now Z,
+    early cost W, total after 3 days). Take now goes to a
+    confirm screen with a solid teal "Sign and Confirm" button,
+    then a concrete success state with a next step.
   - **Invite (was Earn):** "Invite a friend — you both get a
     share", one copy-link button, calculator ("If your friend
     joins with 1, you get 0.10") — no percentages as the headline.
@@ -60,6 +63,8 @@ no keys — never paste a private key anywhere in this project.
     14 worked-example checks, penalty table, Gates 1–5, program
     id, authority address, Studio packages and the campaign
     dashboard.
+  - **In-app footer:** Home / How it works / FAQ / For builders
+    &amp; studios, adapted from the shot's footer.
 - **Exact v2.0 maths** (`src/lib/math.ts`, a TypeScript mirror of
   `contracts/crates/nexus-math`): 1B supply (400M presale, 100M
   airdrop, remaining 500M **RECOMMENDED** split 150M liquidity /
@@ -83,14 +88,28 @@ no keys — never paste a private key anywhere in this project.
   evidence classes, a Contract page with 14 live worked-example
   checks, and an AI Guide that answers only from approved facts
   and says “unknown” for odds and prices.
-- **Design:** light, clean, banking-like (Coinbase / Revolut /
-  Robinhood / Cash App / Mercury / ChangeNOW references; Polygon
-  onboarding 2026 — ~70% abandon at the wallet step, so the
-  wallet is removed from entry): white cards on a pale
-  background, dark ink, one teal accent, big type, generous
-  whitespace, fixed 4-tab bottom nav, spring card flips,
-  staggered fade-ups, confetti on first free open, progress
-  shimmer, button press states, instant feedback on every tap.
+- **Design (Dribbble vaults redesign, 2026-11-24):** reference
+  is "Web3 Vaults &amp; Lending Against Crypto UI UX Dashboard
+  Platform" by Extej, Dribbble shot 21827461 — dark only, very
+  dark navy/black background with a deep teal-blue glow, panels
+  dark navy (~#0d1b2e), thin faint borders, rounded corners
+  12–16px, generous row padding; one teal/mint accent for
+  proceed/manage, red only for sell/danger, white bold headings,
+  small muted grey-blue labels in sentence case, tabular numbers;
+  pill buttons throughout ("Manage" dark pill, teal text;
+  "Take now" dark pill, red text when there is an early cost;
+  "Load more" larger dark pill; one solid teal "Sign and
+  Confirm" button). Vaults as a table, not cards; ratio shown
+  both as a number and a green–yellow–red gradient bar.
+  Deliberately NOT copied from the shot: no lending/borrowing,
+  no APY, no charts, no health-factor slider, no sidebar/top
+  nav, and none of its placeholder EUR/sEURO figures — Nexus
+  has no loan, no APY and no chart data. Earlier references
+  (Coinbase / Revolut / Robinhood / Cash App / Mercury /
+  ChangeNOW; Polygon onboarding 2026 — ~70% abandon at the
+  wallet step, so the wallet is removed from entry) still shape
+  the beginner-first flow: browse before connecting, plain
+  words, one action per screen, instant feedback on every tap.
   All motion respects `prefers-reduced-motion`.
 
 ## Deploy to GitHub Pages
