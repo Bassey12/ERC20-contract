@@ -88,28 +88,48 @@ no keys — never paste a private key anywhere in this project.
   evidence classes, a Contract page with 14 live worked-example
   checks, and an AI Guide that answers only from approved facts
   and says “unknown” for odds and prices.
-- **Design (Dribbble vaults redesign, 2026-11-24):** reference
-  is "Web3 Vaults &amp; Lending Against Crypto UI UX Dashboard
-  Platform" by Extej, Dribbble shot 21827461 — dark only, very
-  dark navy/black background with a deep teal-blue glow, panels
-  dark navy (~#0d1b2e), thin faint borders, rounded corners
-  12–16px, generous row padding; one teal/mint accent for
-  proceed/manage, red only for sell/danger, white bold headings,
-  small muted grey-blue labels in sentence case, tabular numbers;
-  pill buttons throughout ("Manage" dark pill, teal text;
-  "Take now" dark pill, red text when there is an early cost;
-  "Load more" larger dark pill; one solid teal "Sign and
-  Confirm" button). Vaults as a table, not cards; ratio shown
-  both as a number and a green–yellow–red gradient bar.
-  Deliberately NOT copied from the shot: no lending/borrowing,
-  no APY, no charts, no health-factor slider, no sidebar/top
-  nav, and none of its placeholder EUR/sEURO figures — Nexus
-  has no loan, no APY and no chart data. Earlier references
-  (Coinbase / Revolut / Robinhood / Cash App / Mercury /
-  ChangeNOW; Polygon onboarding 2026 — ~70% abandon at the
-  wallet step, so the wallet is removed from entry) still shape
-  the beginner-first flow: browse before connecting, plain
-  words, one action per screen, instant feedback on every tap.
+- **Design (Kabu redesign, 2026-11-24):** reference is
+  kabu.xyz — light, warm, playful storybook world. Warm cream /
+  pale peach background, footer deeper tan-peach, text dark
+  brown, accents peach-orange (main EXPLORE button), pastel
+  pink, lilac-purple, sky blue, soft yellow, purple crystal for
+  Shards. Chunky rounded all-caps headings, ~30px card corners,
+  thick dark-brown outlines, pill buttons, floating translucent
+  cream pill header (logo, tabs, Shards balance, pill Connect).
+  **Nexus Bay:** a full-bleed illustrated sunset scene
+  (CSS/SVG only, no external images) with a bottom-centre cream
+  pill "Welcome to Nexus Bay" + peach-orange EXPLORE button,
+  opening a pannable illustrated map with clickable cream pins
+  (Capsule Pier, Vault Museum, Invite Arcade, Rewards Lookout,
+  Studio HQ, Help Centre) — a pin slides in a side panel with a
+  description and STEP INSIDE. **Capsule friends:** three
+  Nexus-original characters (Pip the Cub, Lumi the Firefly,
+  Wally the Whale) in a Museum-style carousel with Previous /
+  Next arrows and a badge on a cream card. **Progression, in
+  plain words, from real simulated actions only:** daily Shards
+  claim (10/day), a Shards Store / Arcade (fun items only —
+  Shards are practice points, not money, not tokens; the Arcade
+  is the first place that asks you to connect), Pins &amp;
+  Badges for real achievements, XP / Ranks, and a Hall of
+  Legends leaderboard (top 3 on capsule podium cards, SORT BY
+  XP / Shards earned, "My Rank", footnote explaining the
+  metric; crews are the seeded demo entries, your row is your
+  real simulated play). Vaults keep the Dribbble table
+  (# | Vault artwork | Vault ID | Unlocked % with a
+  green–yellow–red gradient bar | You put in | Your share |
+  Manage / Take now), the two-column vault modal and the
+  "Sign and Confirm" flow, restyled warm. 4 bottom tabs on
+  mobile: Play, Vaults, Invite, Help.
+  Deliberately NOT copied from Kabu: no Kabu characters,
+  names, or artwork; no slow loading splash (Nexus loads
+  fast); no sign-in wall on arrival — everything is free to
+  browse, the gate appears only at the point of value
+  (the Arcade). Earlier references (Coinbase / Revolut /
+  Robinhood / Cash App / Mercury / ChangeNOW; Polygon
+  onboarding 2026 — ~70% abandon at the wallet step, so the
+  wallet is removed from entry) still shape the
+  beginner-first flow: browse before connecting, plain words,
+  one action per screen, instant feedback on every tap.
   All motion respects `prefers-reduced-motion`.
 
 ## Deploy to GitHub Pages
