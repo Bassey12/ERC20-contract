@@ -5,20 +5,22 @@ import {
   isRetail, penaltyRatePercent, penaltySplit, referralSplit,
   vestedAmount, workedChecks,
 } from './lib/math'
-import { CAPSULES, CREWS, DEMO_CAMPAIGNS, PACKAGES, guideAnswer } from './lib/data'
-import type { Campaign, Crew } from './lib/data'
+import { BADGES, CAPSULES, CREWS, DEMO_CAMPAIGNS, PACKAGES, PLACES, SHOP_ITEMS, guideAnswer } from './lib/data'
+import type { Campaign, Crew, Place } from './lib/data'
 
-// Dribbble vaults redesign (2026-11-24).
-// Reference: "Web3 Vaults & Lending Against Crypto UI UX Dashboard
-// Platform" by Extej, Dribbble shot 21827461. Dark navy + teal,
-// vaults as a TABLE, vault-detail modal, pill buttons, one idea
-// per screen. 4 bottom tabs only: Play, Vaults, Invite, Help.
-// Plain language in the main UI. Everything technical lives on
-// the "For builders & studios" page. Maths in lib/math.ts is unchanged.
-// Deliberately NOT copied from the shot: no lending/borrowing,
-// no APY, no charts, no health factor, no sidebar/top nav, and
-// none of its placeholder EUR/sEURO figures.
+// Kabu redesign (2026-11-24). Reference: kabu.xyz — light, warm,
+// playful storybook world. Warm cream / pale peach background,
+// dark-brown ink, peach-orange main button, pastel pink / lilac /
+// sky blue / soft yellow, purple crystal for Shards. Chunky rounded
+// all-caps headings, ~30px card corners, thick brown outlines,
+// floating cream pill header, sunset hero, pannable map with pins,
+// Pins / Badges / XP / Ranks / Hall of Legends, daily Shards claim.
+// Maths in lib/math.ts is unchanged. Technical parts live only on
+// the "For builders & studios" page. Deliberately NOT copied from
+// Kabu: no Kabu characters, names or artwork (all Nexus-original),
+// no slow loading splash, no sign-in wall on arrival.
 type Tab = 'play' | 'vaults' | 'invite' | 'help'
+type View = 'bay' | 'map' | 'main' | 'builders'
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'play', label: 'Play', icon: '🎁' },
   { id: 'vaults', label: 'Vaults', icon: '🗄️' },
@@ -29,8 +31,8 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 interface Deposit {
   id: number
   vaultId: string
-  art: number // 0, 1 or 2 — colourful vault artwork gradient
-  label: string // "Small vault" / "Big vault"
+  art: number
+  label: string
   amount: number
   direct: number
   upline: number
@@ -48,11 +50,12 @@ function newVaultId() {
   return `NEX-${Math.floor(10000 + Math.random() * 89999)}`
 }
 const ART_EMOJI = ['🧑‍🚀', '💎', '🐋']
-const CONFETTI_COLORS = ['#2dd4bf', '#f59e0b', '#22d3ee', '#f472b6', '#a78bfa', '#34d399']
+const CONFETTI_COLORS = ['#ff7a3d', '#f7a8c4', '#b79ced', '#7cc4e8', '#ffd166', '#8b5cf6']
+const RANKS = ['Newcomer', 'Explorer', 'Collector', 'Bay Regular', 'Legend of the Bay']
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('play')
-  const [view, setView] = useState<'main' | 'builders'>('main')
+  const [view, setView] = useState<View>('bay')
   const [connected, setConnected] = useState(false)
   const [address, setAddress] = useState('')
   const [showWalletSheet, setShowWalletSheet] = useState(false)
@@ -81,19 +84,46 @@ export default function App() {
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('Hi — ask me anything about Nexus in plain words. If I don\u2019t know the answer, I\u2019ll say so. I never invent prices or odds.')
   const [notice, setNotice] = useState('')
-  // Vault modal: one vault at a time, one idea per screen.
   const [managedId, setManagedId] = useState<number | null>(null)
   const [modalStep, setModalStep] = useState<'detail' | 'confirm' | 'success'>('detail')
   const [lastClaim, setLastClaim] = useState<{ net: number; penalty: number; gross: number } | null>(null)
   const [visibleVaults, setVisibleVaults] = useState(5)
+  // Kabu-style progression — all from real simulated actions in this session.
+  const [shards, setShards] = useState(0)
+  const [shardsEarned, setShardsEarned] = useState(0)
+  const [claimedDate, setClaimedDate] = useState('')
+  const [ownedItems, setOwnedItems] = useState<string[]>([])
+  const [charIndex, setCharIndex] = useState(0)
+  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [dragging, setDragging] = useState<{ x: number; y: number; px: number; py: number } | null>(null)
+  const [sortBy, setSortBy] = useState<'xp' | 'shards'>('xp')
 
   const totalGross = useMemo(() => deposits.reduce((a, d) => a + d.amount, 0), [deposits])
   const totalReferral = useMemo(() => deposits.reduce((a, d) => a + d.direct + d.upline, 0), [deposits])
   const retail = isRetail(totalGross)
   const elapsedSeconds = elapsedHours * 3600
-  // Per-vault share: this join's part of the whole sale, times 400,000,000.
-  // Single-wallet simulation: this wallet is the only contributor, so the
-  // vaults together hold the full presale pool once the sale closes.
+  const totalOpens = Object.values(opens).reduce((a, b) => a + b, 0)
+  // XP from real actions only: 10 per capsule open, 50 per join, 20 per crew joined, 20 per daily claim.
+  const xp = totalOpens * 10 + deposits.length * 50 + joined.length * 20 + (claimedDate ? 20 : 0)
+  const rank = RANKS[Math.min(RANKS.length - 1, Math.floor(xp / 100))]
+  const today = new Date().toDateString()
+  const canClaimDaily = claimedDate !== today
+  const badgesEarned = [
+    totalOpens > 0 ? 'first-open' : '',
+    deposits.length > 0 ? 'first-join' : '',
+    copied ? 'first-invite' : '',
+    claimedDate ? 'first-claim' : '',
+    joined.length > 0 ? 'crew-mate' : '',
+  ].filter(Boolean)
+  const leaderboard = useMemo(() => {
+    const rows = crews.map((c) => ({ name: c.name, members: c.members, xp: c.points, shards: c.shards, you: false }))
+    rows.push({ name: connected ? `You (${address})` : 'You', members: 1, xp, shards: shardsEarned, you: true })
+    rows.sort((a, b) => (sortBy === 'xp' ? b.xp - a.xp : b.shards - a.shards))
+    return rows
+  }, [crews, xp, shardsEarned, sortBy, connected, address])
+  const myRank = leaderboard.findIndex((r) => r.you) + 1
+
   const allocationForDeposit = (d: Deposit) =>
     finalized ? allocationFor(d.amount, totalGross) : 0
   const unlockedForDeposit = (d: Deposit) => {
@@ -146,6 +176,19 @@ export default function App() {
       window.setTimeout(() => setShowConfetti(false), 2400)
     }
   }
+  function claimDaily() {
+    if (!canClaimDaily) return
+    setShards((s) => s + 10)
+    setShardsEarned((s) => s + 10)
+    setClaimedDate(today)
+    setNotice('Nice — you claimed 10 Shards for today. Come back tomorrow for 10 more. Shards are practice points, not money and not tokens.')
+  }
+  function buyItem(id: string, cost: number, name: string) {
+    if (shards < cost) { setNotice(`You need ${cost} Shards for that — you have ${shards}. Claim your daily Shards or open more capsules.`); return }
+    setShards((s) => s - cost)
+    setOwnedItems((o) => [...o, id])
+    setNotice(`You got the ${name}! It is yours in this demo. It changes nothing about your share — it is just for fun.`)
+  }
   function deposit() {
     if (!connected) { setShowWalletSheet(true); return }
     if (finalized) { setNotice('The sale is closed — joining is finished.'); return }
@@ -160,16 +203,11 @@ export default function App() {
     setDeposits((ds) => [...ds, d])
     setNotice(`Done — you joined with ${fmtSol(amountLamports)} in practice coins and opened vault ${d.vaultId}. ${hasReferrer ? `${referrer} gets ${fmtSol(split.direct)}.` : ''} The launch gets ${fmtSol(split.vault)}.`)
     setTab('vaults')
+    setView('main')
   }
-  function openManage(d: Deposit) {
-    setManagedId(d.id); setModalStep('detail'); setLastClaim(null)
-  }
-  function openTakeNow(d: Deposit) {
-    setManagedId(d.id); setModalStep('confirm'); setLastClaim(null)
-  }
-  function closeModal() {
-    setManagedId(null); setModalStep('detail'); setLastClaim(null)
-  }
+  function openManage(d: Deposit) { setManagedId(d.id); setModalStep('detail'); setLastClaim(null) }
+  function openTakeNow(d: Deposit) { setManagedId(d.id); setModalStep('confirm'); setLastClaim(null) }
+  function closeModal() { setManagedId(null); setModalStep('detail'); setLastClaim(null) }
   function confirmClaim() {
     if (!managed) return
     const c = claimableForDeposit(managed)
@@ -193,12 +231,26 @@ export default function App() {
     setNotice('Campaign created in the simulated dashboard. No invoice, no payment — packages are sold by written scope only.')
   }
   function goTab(t: Tab) { setTab(t); setView('main'); window.scrollTo({ top: 0 }) }
+  function stepInside(p: Place) {
+    setSelectedPlace(null)
+    if (p.go === 'builders') { setView('builders'); window.scrollTo({ top: 0 }); return }
+    if (p.go === 'store') { goTab('invite'); return }
+    goTab(p.go)
+  }
+  function onMapDown(e: React.PointerEvent) {
+    setDragging({ x: e.clientX, y: e.clientY, px: pan.x, py: pan.y })
+  }
+  function onMapMove(e: React.PointerEvent) {
+    if (!dragging) return
+    setPan({ x: Math.max(-260, Math.min(260, dragging.px + (e.clientX - dragging.x))), y: Math.max(-140, Math.min(140, dragging.py + (e.clientY - dragging.y))) })
+  }
 
   const timelineDone = (h: number) => launched && elapsedHours >= h
   const managedClaimable = managed ? claimableForDeposit(managed) : 0
   const managedPreview = managed ? penaltyForDeposit(managed) : null
   const managedAlloc = managed ? allocationForDeposit(managed) : 0
   const managedRatio = managed ? ratioForDeposit(managed) : 0
+  const char = CAPSULES[charIndex]
 
   if (view === 'builders') {
     return (
@@ -206,11 +258,12 @@ export default function App() {
         <header className="topbar"><div className="topbar-inner">
           <div className="logo"><span className="logo-mark">⬡</span> NEXUS</div>
           <span className="practice-pill">Practice only</span>
+          <span className="spacer" />
+          <button className="pill" onClick={() => setView('bay')}>← Back to Nexus Bay</button>
         </div></header>
         <main className="wrap">
-          <button className="btn ghost small" onClick={() => setView('main')} style={{ marginTop: 18 }}>← Back to Nexus</button>
-          <section className="card fade-up" style={{ marginTop: 14 }}>
-            <h1 style={{ fontSize: '1.7rem' }}>For builders &amp; studios</h1>
+          <section className="card fade-up" style={{ marginTop: 18 }}>
+            <h1>For builders &amp; studios</h1>
             <p className="muted">This page is for people building on Nexus or running a campaign. Everything here uses the technical words that are hidden from the main app — on purpose, so new players are not confused by them.</p>
           </section>
 
@@ -283,7 +336,7 @@ export default function App() {
             </table></div>
             {notice && <div className="notice info" style={{ marginTop: 14 }} role="status">{notice}</div>}
           </section>
-          <footer>Nexus v2.0 — Founder &amp; CEO: Abasiofon Joseph Bassey. Simulated devnet prototype only.</footer>
+          <footer className="bay-footer">Nexus v2.0 — Founder &amp; CEO: Abasiofon Joseph Bassey. Simulated devnet prototype only.</footer>
         </main>
       </div>
     )
@@ -299,21 +352,100 @@ export default function App() {
         </div>
       )}
       <header className="topbar"><div className="topbar-inner">
-        <div className="logo"><span className="logo-mark">⬡</span> NEXUS</div>
-        <span className="practice-pill">Practice money only</span>
+        <button className="logo" onClick={() => setView('bay')}><span className="logo-mark">⬡</span> NEXUS</button>
+        <nav className="topnav" aria-label="Nexus">
+          {TABS.map((t) => (
+            <button key={t.id} className={`topnav-link${view === 'main' && tab === t.id ? ' active' : ''}`} onClick={() => goTab(t.id)}>{t.label}</button>
+          ))}
+          <button className="topnav-link" onClick={() => setView('map')}>Map</button>
+        </nav>
         <span className="spacer" />
-        {connected && <span className="wallet-chip">Demo wallet · {address}</span>}
+        <span className="shards-chip" title="Shards are practice points — not money, not tokens">🔮 {shards} Shards</span>
+        {connected
+          ? <span className="wallet-chip">Demo · {address}</span>
+          : <button className="pill connect-pill" onClick={() => setShowWalletSheet(true)}>Connect</button>}
       </div></header>
 
+      {view === 'bay' && (
+        <main className="bay">
+          <div className="sunset" aria-hidden="true">
+            <div className="sun" />
+            <div className="cloud c1" /><div className="cloud c2" /><div className="cloud c3" />
+            <div className="birds">﹋ ﹋</div>
+            <div className="hills" />
+            <div className="sea" />
+            <div className="bay-town"><span>🏛️</span><span>🎁</span><span>🕹️</span><span>🔭</span><span>🏢</span></div>
+          </div>
+          <div className="bay-pill fade-up">
+            <p className="bay-eyebrow">Welcome to</p>
+            <h1>Sunset City<br />of Nexus Bay</h1>
+            <p className="muted">Explore a little town, open a capsule, collect Shards, and join the launch — all in plain words, all practice money.</p>
+            <button className="btn explore-btn" onClick={() => setView('map')}>Explore</button>
+            <p className="small muted" style={{ marginTop: 12, marginBottom: 0 }}>No sign-in to look around · Try a capsule free · Practice only</p>
+          </div>
+          {notice && <div className="notice info fade-up bay-notice" role="status">{notice}</div>}
+          <section className="wrap bay-steps">
+            <div className="card"><h3>1 · Explore the map</h3><p className="muted">Tap a pin, peek inside a place, and step in when you are ready.</p></div>
+            <div className="card"><h3>2 · Claim Shards daily</h3><p className="muted">Come back once a day for 10 free Shards. Spend them in the Arcade on fun things.</p></div>
+            <div className="card"><h3>3 · Join the launch</h3><p className="muted">Open a capsule, join with practice coins, and take your share later.</p></div>
+          </section>
+          <footer className="bay-footer">Nexus — practice only, no real money, no guaranteed returns.<br />Founder &amp; CEO: Abasiofon Joseph Bassey.</footer>
+        </main>
+      )}
+
+      {view === 'map' && (
+        <main className="map-view">
+          <div className="map-head wrap">
+            <h1>Map of Nexus Bay</h1>
+            <p className="muted">Drag the map to look around. Tap a pin to peek inside, then STEP INSIDE when you are ready. Everything here is free to browse — no sign-in needed.</p>
+            <button className="pill" onClick={() => setView('bay')}>← Back to the Bay</button>
+          </div>
+          <div
+            className="map-stage"
+            onPointerDown={onMapDown}
+            onPointerMove={onMapMove}
+            onPointerUp={() => setDragging(null)}
+            onPointerLeave={() => setDragging(null)}
+          >
+            <div className="map-inner" style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}>
+              <div className="map-sun" aria-hidden="true" />
+              <div className="map-sea" aria-hidden="true" />
+              <div className="map-land" aria-hidden="true" />
+              <div className="map-road" aria-hidden="true" />
+              {PLACES.map((p) => (
+                <button
+                  key={p.id}
+                  className="map-pin"
+                  style={{ left: `${p.x}%`, top: `${p.y}%`, background: p.colour }}
+                  onClick={(e) => { e.stopPropagation(); setSelectedPlace(p) }}
+                  aria-label={p.name}
+                >
+                  <span aria-hidden="true">{p.emoji}</span>
+                  <span className="pin-label">{p.name}</span>
+                </button>
+              ))}
+            </div>
+            {selectedPlace && (
+              <aside className="place-panel" role="dialog" aria-label={selectedPlace.name}>
+                <button className="pill" onClick={() => setSelectedPlace(null)}>✕ Close</button>
+                <div className="place-art" style={{ background: selectedPlace.colour }} aria-hidden="true">{selectedPlace.emoji}</div>
+                <h2>{selectedPlace.name}</h2>
+                <p className="muted">{selectedPlace.detail}</p>
+                <button className="btn" onClick={() => stepInside(selectedPlace)}>Step inside</button>
+              </aside>
+            )}
+          </div>
+          <p className="small muted wrap" style={{ textAlign: 'center' }}>Pins: {PLACES.map((p) => p.name).join(' · ')}</p>
+        </main>
+      )}
+
+      {view === 'main' && (
       <main className="wrap">
         {notice && <div className="notice info fade-up" style={{ marginTop: 16 }} role="status">{notice}</div>}
 
         {tab === 'play' && (
           <section className="tab-panel">
             <div className="hero fade-up">
-              <div className="hero-art" aria-hidden="true">
-                <span className="capsule-mini">🎁</span><span className="capsule-mini">💎</span><span className="capsule-mini">🐋</span>
-              </div>
               <h1>Open a capsule, <em>join the launch.</em></h1>
               <p className="big">Try it free first. No wallet needed to look around. This is practice money — not real money, and nothing here is promised to make money.</p>
               <div className="steps">
@@ -321,7 +453,31 @@ export default function App() {
                 <span className="step-chip">2 · Join with practice coins</span>
                 <span className="step-chip">3 · Take your share later</span>
               </div>
+              <div className="row" style={{ marginTop: 16 }}>
+                <button className="btn explore-btn" style={{ width: 'auto' }} onClick={() => setView('map')}>🗺️ Explore the map</button>
+                <button className="pill" onClick={claimDaily} disabled={!canClaimDaily}>{canClaimDaily ? '🔮 Claim 10 daily Shards' : '✓ Daily Shards claimed — back tomorrow'}</button>
+              </div>
+              <p className="small muted" style={{ marginTop: 10 }}>Your Shards: <b>{shards}</b> · Your XP: <b>{xp}</b> · Your Rank: <b>{rank}</b> — earned from real actions in this demo.</p>
             </div>
+
+            <section className="card fade-up" style={{ marginTop: 18 }}>
+              <h2>Meet the capsule friends</h2>
+              <p className="muted">Every capsule has a friend. Flip through them — each one is a Nexus original.</p>
+              <div className="carousel">
+                <button className="pill" onClick={() => setCharIndex((i) => (i - 1 + CAPSULES.length) % CAPSULES.length)} aria-label="Previous character">← Prev</button>
+                <div className="char-card">
+                  <div className={`char-art art-${'abc'[charIndex]}`} aria-hidden="true">{char.characterEmoji}</div>
+                  <span className="char-badge">{char.character}</span>
+                  <h3>{char.name}</h3>
+                  <p className="muted">{char.personality}</p>
+                  <p className="small muted">{char.tier} · {char.cost}</p>
+                  <button className="btn small" onClick={() => openCapsule(char.id)}>Open {char.name}&apos;s capsule</button>
+                  <span className="small muted">Opened {opens[char.id] || 0}×</span>
+                </div>
+                <button className="pill" onClick={() => setCharIndex((i) => (i + 1) % CAPSULES.length)} aria-label="Next character">Next →</button>
+              </div>
+              <div className="dots" aria-hidden="true">{CAPSULES.map((c, i) => (<span key={c.id} className={i === charIndex ? 'dot on' : 'dot'}>●</span>))}</div>
+            </section>
 
             <h2 style={{ marginTop: 26 }}>Pick a capsule</h2>
             <p className="muted">Tap one to open it. Opening is just a preview — it never moves money and never gives you tokens by itself.</p>
@@ -352,6 +508,24 @@ export default function App() {
             )}
 
             <section className="card fade-up" style={{ marginTop: 26 }}>
+              <h2>Your Pins &amp; Badges</h2>
+              <p className="muted">Badges are for things you actually did in this demo. They are not money and not tokens.</p>
+              <div className="badge-row">
+                {BADGES.map((b) => {
+                  const earned = badgesEarned.includes(b.id)
+                  return (
+                    <div key={b.id} className={`badge${earned ? ' earned' : ''}`} title={b.desc}>
+                      <span aria-hidden="true">{b.emoji}</span>
+                      <strong>{b.name}</strong>
+                      <span className="small muted">{earned ? 'Earned ✓' : 'Not yet'}</span>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="small muted">XP: <b>{xp}</b> (10 per capsule open · 50 per join · 20 per crew joined · 20 per daily claim) · Rank: <b>{rank}</b></p>
+            </section>
+
+            <section className="card fade-up" style={{ marginTop: 16 }}>
               <h2>Join the launch</h2>
               <p className="muted">SOL is the practice coin here. Choose how much to put in — you can see exactly where it goes before you commit.</p>
               <div className="preset-row" role="group" aria-label="Amount">
@@ -381,13 +555,43 @@ export default function App() {
             </section>
 
             <section className="card fade-up" style={{ marginTop: 16 }}>
+              <h2>Shards Store — the Arcade</h2>
+              <p className="muted">Spend Shards on fun things. Shards are practice points — <strong>not money, not tokens</strong> — and they never change your share.</p>
+              {!connected ? (
+                <div className="arcade-gate">
+                  <h3>Sign in to browse the Arcade</h3>
+                  <p className="muted">Connect your account to spend Shards on rewards. Looking around the Bay is free — this is the first place that asks you to connect.</p>
+                  <button className="btn" onClick={() => setShowWalletSheet(true)}>Connect — 1 tap</button>
+                </div>
+              ) : (
+                <>
+                  <p>Your Shards: <b>🔮 {shards}</b> · <button className="pill" onClick={claimDaily} disabled={!canClaimDaily}>{canClaimDaily ? 'Claim 10 daily Shards' : 'Daily Shards claimed'}</button></p>
+                  <div className="grid cols-2">
+                    {SHOP_ITEMS.map((item) => {
+                      const owned = ownedItems.includes(item.id)
+                      return (
+                        <article key={item.id} className="card shop-item" style={{ boxShadow: 'none' }}>
+                          <div className="shop-emoji" aria-hidden="true">{item.emoji}</div>
+                          <h3>{item.name}</h3>
+                          <p className="small muted">{item.blurb}</p>
+                          <div className="kv"><span>Price</span><b>🔮 {item.cost} Shards</b></div>
+                          <button className="btn small" onClick={() => buyItem(item.id, item.cost, item.name)} disabled={owned || shards < item.cost}>{owned ? 'Owned ✓' : shards < item.cost ? 'Not enough Shards' : 'Buy with Shards'}</button>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </section>
+
+            <section className="card fade-up" style={{ marginTop: 16 }}>
               <h2>Play together</h2>
               <p className="muted">Crews are a game. Game points are <strong>not money and not tokens</strong> — they never change your share.</p>
               {crews.map((c) => (
-                <div key={c.id} className="kv"><span><strong>🏴‍☠️ {c.name}</strong><br /><span className="small muted">{c.members} members · {c.points.toLocaleString()} game points — {c.challenge}</span></span>
+                <div key={c.id} className="kv"><span><strong>🏴‍☠️ {c.name}</strong><br /><span className="small muted">{c.members} members · {c.points.toLocaleString()} XP — {c.challenge}</span></span>
                   <span className="row">
                     <button className="pill" onClick={() => setJoined((j) => j.includes(c.id) ? j : [...j, c.id])}>{joined.includes(c.id) ? 'Joined ✓' : 'Join crew'}</button>
-                    <button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50 } : x))} disabled={!joined.includes(c.id)}>+50 points</button>
+                    <button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50, shards: x.shards + 5 } : x))} disabled={!joined.includes(c.id)}>+50 XP</button>
                   </span>
                 </div>
               ))}
@@ -406,7 +610,7 @@ export default function App() {
 
         {tab === 'vaults' && (
           <section className="tab-panel">
-            <h1 style={{ fontSize: '1.7rem' }}>Your vaults</h1>
+            <h1>Your vaults</h1>
             <p className="muted">Each join opens a vault. Whoever controls a vault controls that share — in this demo, that is you. Your share is worked out when the sale closes: what you put in, divided by what everyone put in, times 400,000,000 tokens.</p>
             {deposits.length === 0 ? (
               <div className="card fade-up">
@@ -498,7 +702,7 @@ export default function App() {
 
         {tab === 'invite' && (
           <section className="tab-panel">
-            <h1 style={{ fontSize: '1.7rem' }}>Invite a friend</h1>
+            <h1>Invite a friend</h1>
             <div className="card fade-up">
               <h2>You both get a share</h2>
               <p className="muted">When a friend joins through your link, you get a share of what they put in — and the person who invited you gets a smaller share. No promises, no guaranteed earnings.</p>
@@ -525,12 +729,39 @@ export default function App() {
                 </>
               )}
             </div>
+
+            <section className="card fade-up d1" style={{ marginTop: 14 }}>
+              <h2>Hall of Legends</h2>
+              <p className="muted">The top collectors in Nexus Bay. XP comes from playing — opening capsules, joining, inviting, claiming daily Shards. Shards are practice points, not money.</p>
+              <div className="podium">
+                {leaderboard.slice(0, 3).map((r, i) => (
+                  <div key={r.name} className={`podium-card place-${i + 1}`}>
+                    <div className="podium-medal" aria-hidden="true">{['🥇', '🥈', '🥉'][i]}</div>
+                    <strong>{r.name}</strong>
+                    <span className="stat-num">{sortBy === 'xp' ? `${r.xp} XP` : `🔮 ${r.shards}`}</span>
+                    <span className="small muted">{r.members} {r.members === 1 ? 'collector' : 'collectors'}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="row" style={{ marginTop: 14 }}>
+                <button className={`pill${sortBy === 'xp' ? ' active' : ''}`} onClick={() => setSortBy('xp')}>Sort by XP</button>
+                <button className={`pill${sortBy === 'shards' ? ' active' : ''}`} onClick={() => setSortBy('shards')}>Sort by Shards earned</button>
+                <span className="small muted">My Rank: <b>#{myRank}</b> of {leaderboard.length} · You: <b>{xp} XP</b> · <b>🔮 {shardsEarned} Shards</b></span>
+              </div>
+              <div className="table-wrap" style={{ marginTop: 12 }}><table>
+                <thead><tr><th>Rank</th><th>Collector</th><th>XP</th><th>Shards earned</th></tr></thead>
+                <tbody>{leaderboard.map((r, i) => (
+                  <tr key={r.name} className={r.you ? 'you-row' : ''}><td>#{i + 1}</td><td><strong>{r.name}</strong>{r.you ? ' — that is you!' : ''}</td><td>{r.xp}</td><td>🔮 {r.shards}</td></tr>
+                ))}</tbody>
+              </table></div>
+              <p className="small muted">Top 1000 collectors — in this demo, the crews are seeded practice crews and your row is your real simulated play. Nobody here is a real person with real earnings.</p>
+            </section>
           </section>
         )}
 
         {tab === 'help' && (
           <section className="tab-panel">
-            <h1 style={{ fontSize: '1.7rem' }}>Help</h1>
+            <h1>Help</h1>
             <div className="card fade-up">
               <h2>Ask in plain words</h2>
               <p className="muted">I answer only from the approved Nexus facts. If I don&apos;t know, I&apos;ll say so — I never invent prices or odds. Never paste a password or secret phrase here.</p>
@@ -551,33 +782,34 @@ export default function App() {
               <div className="kv"><span>Will I definitely make money?</span><b>No — nothing is promised</b></div>
               <div className="kv"><span>Do I need a wallet to look around?</span><b>No — only to join</b></div>
               <div className="kv"><span>Can I get my practice coins back?</span><b>No — not in this design</b></div>
+              <div className="kv"><span>What are Shards?</span><b>Practice points for fun — not money, not tokens</b></div>
             </div>
           </section>
         )}
 
-        <footer>
+        <footer className="bay-footer">
           <div className="footer-links">
-            <button className="linklike" onClick={() => goTab('play')}>Home</button>
+            <button className="linklike" onClick={() => setView('bay')}>Home</button>
             <button className="linklike" onClick={() => goTab('play')}>How it works</button>
             <button className="linklike" onClick={() => goTab('help')}>FAQ</button>
-            <button className="linklike" onClick={() => { setView('builders'); window.scrollTo({ top: 0 }) }}>For builders &amp; studios</button>
+            <button className="linklike" onClick={() => setView('builders')}>For builders &amp; studios</button>
           </div>
           Nexus — practice only, no real money, no guaranteed returns.<br />
           Founder &amp; CEO: Abasiofon Joseph Bassey.
         </footer>
       </main>
+      )}
 
       <nav className="bottom-nav" aria-label="Nexus">
         <div className="bottom-nav-inner">
           {TABS.map((t) => (
-            <button key={t.id} className={`bottom-tab${tab === t.id ? ' active' : ''}`} onClick={() => goTab(t.id)} aria-current={tab === t.id ? 'page' : undefined}>
+            <button key={t.id} className={`bottom-tab${view === 'main' && tab === t.id ? ' active' : ''}`} onClick={() => goTab(t.id)} aria-current={view === 'main' && tab === t.id ? 'page' : undefined}>
               <span className="tab-icon" aria-hidden="true">{t.icon}</span>{t.label}
             </button>
           ))}
         </div>
       </nav>
 
-      {/* Vault detail modal — two columns over the dimmed table, as in the shot */}
       {managed && (
         <>
           <div className="modal-backdrop" onClick={closeModal} />
