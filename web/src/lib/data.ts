@@ -21,11 +21,11 @@ export const CAPSULES: Capsule[] = [
   { id: 'whale', name: 'Big Capsule', tier: 'Big — more than 2 in total', emoji: '🐋', cost: 'Above 2 SOL per wallet', blurb: 'For a big join. Your share unlocks a little at a time over 3 days. Taking it early costs you a little.', status: 'CURRENT', character: 'Wally the Whale', characterEmoji: '🐋', personality: 'Big, calm, and patient — he takes his time and never splashes about.' },
 ]
 
-export interface Crew { id: string; name: string; members: number; points: number; shards: number; challenge: string }
+export interface Crew { id: string; name: string; members: number; points: number; challenge: string }
 export const CREWS: Crew[] = [
-  { id: 'trench', name: 'Trench Divers', members: 42, points: 1280, shards: 128, challenge: 'Open 3 capsules and leave one piece of feedback' },
-  { id: 'vault', name: 'Vault Keepers', members: 31, points: 940, shards: 94, challenge: 'Explain to a new player how the invite share works' },
-  { id: 'reef', name: 'Reef Riders', members: 27, points: 760, shards: 76, challenge: 'Find and report one confusing label in the app' },
+  { id: 'trench', name: 'Trench Divers', members: 42, points: 1280, challenge: 'Open 3 capsules and leave one piece of feedback' },
+  { id: 'vault', name: 'Vault Keepers', members: 31, points: 940, challenge: 'Explain to a new player how the invite share works' },
+  { id: 'reef', name: 'Reef Riders', members: 27, points: 760, challenge: 'Find and report one confusing label in the app' },
 ]
 
 export interface Campaign {
@@ -65,7 +65,7 @@ export interface Place {
 export const PLACES: Place[] = [
   { id: 'pier', name: 'Capsule Pier', emoji: '🎁', x: 18, y: 62, blurb: 'Where every adventure starts.', detail: 'Three friendly capsules wait on the pier. Try the free one first — no wallet needed, nothing moves, nothing is promised.', go: 'play', colour: '#ffb38a' },
   { id: 'museum', name: 'Vault Museum', emoji: '🏛️', x: 46, y: 30, blurb: 'Your vaults, on display.', detail: 'Every join opens a vault, and every vault has its own card in the museum. See what you put in, your share, and what is ready to take.', go: 'vaults', colour: '#f7a8c4' },
-  { id: 'arcade', name: 'Invite Arcade', emoji: '🕹️', x: 72, y: 58, blurb: 'Play, invite, collect Shards.', detail: 'Spend your Shards on fun things, invite a friend and watch your crew climb the Hall of Legends. Shards are practice points — not money, not tokens.', go: 'invite', colour: '#b79ced' },
+  { id: 'arcade', name: 'Invite Arcade', emoji: '🕹️', x: 72, y: 58, blurb: 'Play, invite, climb the board.', detail: 'Invite a friend and watch your crew climb the Hall of Legends. Crew points are device-local game points — not money, not tokens.', go: 'invite', colour: '#b79ced' },
   { id: 'lookout', name: 'Rewards Lookout', emoji: '🔭', x: 84, y: 26, blurb: 'The best view in Nexus Bay.', detail: 'Watch your share unlock over 3 days, a little at a time. Small joins are ready in full when the launch starts.', go: 'vaults', colour: '#7cc4e8' },
   { id: 'hq', name: 'Studio HQ', emoji: '🏢', x: 30, y: 18, blurb: 'For the people building Nexus.', detail: 'Studios, campaigns, and the technical pages — kept here, out of the way, so players are never confused by them.', go: 'builders', colour: '#ffd166' },
   { id: 'help', name: 'Help Centre', emoji: '💬', x: 58, y: 78, blurb: 'Ask in plain words.', detail: 'Answers only from the approved Nexus facts. If we do not know, we say so — we never invent prices or odds.', go: 'help', colour: '#a8e6a1' },
@@ -79,21 +79,17 @@ export const PLACES: Place[] = [
  *  real approval, and the 1,000 demo tokens are not real tokens. */
 export const DEMO_AIRDROP = { name: 'Ada Demo', wallet: 'DEMOADA', tokens: 1000 }
 
-/** Shards Store — fun items only. Shards are practice points, NOT money, NOT tokens. */
-export interface ShopItem { id: string; name: string; emoji: string; cost: number; blurb: string }
-export const SHOP_ITEMS: ShopItem[] = [
-  { id: 'sunny-badge', name: 'Sunny Badge', emoji: '☀️', cost: 20, blurb: 'A sunny pin for your collection. Shows on your card in the Hall of Legends.' },
-  { id: 'pirate-hat', name: 'Pirate Hat', emoji: '🏴‍☠️', cost: 40, blurb: 'A jaunty hat for Pip the Cub. Purely for fun — it changes nothing about your share.' },
-  { id: 'turbo-boost', name: 'Turbo Boost', emoji: '⚡', cost: 60, blurb: 'Double XP from your next three actions in this demo. A game boost, not a money boost.' },
-  { id: 'golden-pin', name: 'Golden Pin', emoji: '📍', cost: 100, blurb: 'The rarest pin in Nexus Bay. For collectors who have been everywhere and done everything.' },
-]
-
+/** Pins & badges — device-local game marks only. They are NOT tokens,
+ *  NOT money, NOT transferable, and they never change your share.
+ *  (v2.0 p. 16: the Shards currency and its store were removed — local
+ *  records can be cleared or manipulated, so they must never determine
+ *  financial rewards.) */
 export interface BadgeDef { id: string; name: string; emoji: string; desc: string }
 export const BADGES: BadgeDef[] = [
   { id: 'first-open', name: 'First Peek', emoji: '👀', desc: 'Opened your first capsule.' },
   { id: 'first-join', name: 'Bay Joiner', emoji: '🌊', desc: 'Joined the launch for the first time.' },
   { id: 'first-invite', name: 'Friend Bringer', emoji: '🤝', desc: 'Shared your invite link.' },
-  { id: 'first-claim', name: 'Daily Collector', emoji: '💎', desc: 'Claimed your daily Shards.' },
+  { id: 'first-claim', name: 'First Claim', emoji: '💎', desc: 'Took your first share.' },
   { id: 'crew-mate', name: 'Crew Mate', emoji: '🏴‍☠️', desc: 'Joined a crew.' },
 ]
 

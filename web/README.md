@@ -39,16 +39,21 @@ transparency banner. Player pill nav (Capsules, Vault, Earn,
 Pirates, Rankings, Activity) and Studio pill nav (Campaigns, Share,
 Launch controls, Business).
 
-- **40 pages**, all reachable: Prototype scenarios index + Journey
-  directory (8 journeys) + AI guide, terms & privacy, business
-  model, campaign management/report, recovery, safety & support,
-  how it works, public campaign, campaign editor/dashboard, studio
-  sign-in, business, launch controls, campaigns, refund center,
-  campaign completed/cancelled/live, crew standings, activity with
-  evidence, referral account, connected vault, crew progress,
-  transaction detail, claim review, airdrop eligibility, capsule
-  opening, wallet connection, capsule review, capsule guide, share,
-  activity, rankings, pirates, earn, vault, capsules.
+- **51 pages**, all reachable: the 40 Figma pages (Prototype
+  scenarios index + Journey directory (8 journeys) + AI guide,
+  terms & privacy, business model, campaign management/report,
+  recovery, safety & support, how it works, public campaign,
+  campaign editor/dashboard, studio sign-in, business, launch
+  controls, campaigns, refund center, campaign completed/cancelled/
+  live, crew standings, activity with evidence, referral account,
+  connected vault, crew progress, transaction detail, claim review,
+  airdrop eligibility, capsule opening, wallet connection, capsule
+  review, capsule guide, share, activity, rankings, pirates, earn,
+  vault, capsules) **plus 11 v2.0 pages** in `src/lib/v2.ts`:
+  Network & mainnet readiness, Token economics, Referrals &
+  money flows, Evidence classes, Wallet safety, FAQ, Business
+  Model Canvas, The five scholarly models, Pricing & unit
+  economics, Operations, Gates/risk/checklists.
 - **67 dialog states** in one template (eyebrow "EXAMPLE STATE ·
   NOT LIVE", tinted details table, guidance, working buttons).
 - **Canonical tiers** (tablet design + v2.0 maths — the desktop
@@ -60,6 +65,63 @@ Launch controls, Business).
   Poké Ball) and an original floating-city-at-sunset hero, CSS/SVG,
   no external images, no photos of people. One "Link copied" toast
   only. One responsive codebase, not three breakpoint copies.
+
+## v2.0 completeness (2026-11-27)
+
+Everything stated in the v2.0 document is now in the app, in the
+Figma design system (`src/lib/v2.ts` + the 11 new pages above):
+
+- **Mainnet-ready, NOT mainnet-live:** target Solana mainnet-beta,
+  current devnet, Gates 1–5 with pass/kill criteria (p. 17), each
+  honestly marked. Gate 1 is in progress (anchor test running,
+  Phase 1 on-chain tests, separate run); Gates 2–5 not passed.
+  "READ THIS FIRST — DEVNET ONLY" is stated on the readiness page.
+  Deposits/claims stay GATED (simulated, test SOL only).
+- **Token:** 400M presale / 100M airdrop (Merkle only, 72h vest,
+  no penalty) / 500M RECOMMENDED 150/100/100/100/50 — labelled NOT
+  approved, must be approved and locked before launch or the launch
+  does not proceed. 1B is a mint cap; mint + freeze authority
+  revoked at initialisation. Retail = fully claimable (not
+  tradable, no listing promised). 65.12 USD/SOL is a fixed
+  illustrative baseline, not a live price.
+- **Vesting worked examples, corrected:** 7,200 tokens → 1,200 /
+  2,400 / 4,800 / 7,200 at 12/24/48/72h; 1,000,000-token whale at
+  12h claims 166,667 gross, penalty 41,667 (33,334 burned, 8,333
+  escrow), net 125,000. Claimable = vested − already gross-claimed,
+  never below zero. Network clock governs; the Vault slider is a
+  calculator, not a time machine.
+- **Referrals & money flows:** 10/2/88 table (10 SOL → 1.00/0.20/
+  8.80; 1 SOL no referrers → pool 1.00), ancestry rules, and three
+  SEPARATE flows (A. protocol SOL — not revenue; B. campaign USDC
+  fees — revenue when earned; C. sponsored rewards — separate
+  obligation, pay approved rewards or return unused).
+- **Canvas (9 blocks) + five scholarly models** (Canvas,
+  Lean Startup, Two-Sided Platforms, Porter + Blue Ocean with
+  ERRC, JTBD + Traction + Flywheel), each with decision rule and
+  metric.
+- **Pricing & unit economics:** Free Pilot 7 days, Studio 750
+  USDC 14 days, Growth 2,000 USDC 30 days, each feature tagged
+  CURRENT / GATED / RECOMMENDED. Refund policy + the pre-payment
+  blockers shown as NOT YET DEFINED (start timestamp + timezone,
+  day-3 cutoff, refund processing time, fee/tax treatment).
+  Studio 750 − 150 = 600, 80% margin; Growth variable 500 is a
+  v2.0 planning assumption, labelled so; break-even 5 campaigns
+  (6 with 100 USDC CAC). Scenarios table, illustrative only.
+- **Evidence classes, wallet safety (5 checks), Pirates
+  guardrails, AI guide bounds** (incl. the two v2.0 test
+  questions), **operations** (delivery checklists, team — only
+  confirmed role Abasiofon Joseph Bassey, Founder & CEO —
+  separation of duties, rhythms, Bullseye table, first cohort 5
+  studios, validation gates 3 of 5 / 2 repeat), **gates &
+  checklists** (risk register incl. the no-withdrawal warning,
+  technical + commercial checklists, SOPs), and the **FAQ** with
+  the honest answers.
+- **Removed:** the Kabu Shards economy (daily Shards claim,
+  Shards Store, Shards balances/sorting) — v2.0 p. 16: local
+  points are not tokens. Pins & badges and crew points remain as
+  device-local game marks only, with the "not tokens" rule stated.
+  There was no 10-minute demo vault clock in this web source
+  (the vault uses the real 72h rule).
 
 ## What is inside
 
@@ -146,10 +208,10 @@ Launch controls, Business).
   kabu.xyz — light, warm, playful storybook world. Warm cream /
   pale peach background, footer deeper tan-peach, text dark
   brown, accents peach-orange (main EXPLORE button), pastel
-  pink, lilac-purple, sky blue, soft yellow, purple crystal for
-  Shards. Chunky rounded all-caps headings, ~30px card corners,
+  pink, lilac-purple, sky blue, soft yellow, purple crystal
+  accents. Chunky rounded all-caps headings, ~30px card corners,
   thick dark-brown outlines, pill buttons, floating translucent
-  cream pill header (logo, tabs, Shards balance, pill Connect).
+  cream pill header (logo, tabs, pill Connect).
   **Nexus Bay:** a full-bleed illustrated sunset scene
   (CSS/SVG only, no external images) with a bottom-centre cream
   pill "Welcome to Nexus Bay" + peach-orange EXPLORE button,
@@ -160,15 +222,13 @@ Launch controls, Business).
   Nexus-original characters (Pip the Cub, Lumi the Firefly,
   Wally the Whale) in a Museum-style carousel with Previous /
   Next arrows and a badge on a cream card. **Progression, in
-  plain words, from real simulated actions only:** daily Shards
-  claim (10/day), a Shards Store / Arcade (fun items only —
-  Shards are practice points, not money, not tokens; the Arcade
-  is the first place that asks you to connect), Pins &amp;
-  Badges for real achievements, XP / Ranks, and a Hall of
-  Legends leaderboard (top 3 on capsule podium cards, SORT BY
-  XP / Shards earned, "My Rank", footnote explaining the
-  metric; crews are the seeded demo entries, your row is your
-  real simulated play). Vaults keep the Dribbble table
+  plain words, from real simulated actions only:** device-local
+  crew points and Pins &amp; Badges for real achievements, XP /
+  Ranks, and a Hall of
+  Legends leaderboard (top 3 on capsule podium cards, "My Rank",
+  footnote explaining the metric; crews are the seeded demo
+  entries, your row is your real simulated play). Vaults keep
+  the Dribbble table
   (# | Vault artwork | Vault ID | Unlocked % with a
   green–yellow–red gradient bar | You put in | Your share |
   Manage / Take now), the two-column vault modal and the
@@ -206,8 +266,9 @@ run publishes the site; the workflow summary shows its URL.
 
 ## Still missing for a real launch
 
-Gates 1–3 are still open: `anchor test` has not run, there is no
-funded devnet deployment signer, and no deposit-to-claim lifecycle
-has been verified on-chain. The contract has no SOL withdrawal /
+Gate 1 is in progress (`anchor test` running, Phase 1 on-chain
+tests, separate run). Gates 2–5 are still open: there is no funded
+devnet deployment signer, and no deposit-to-claim lifecycle has
+been verified on-chain. The contract has no SOL withdrawal /
 liquidity-migration instruction and no contribution-refund
 instruction. Do not accept production funds. See `../README.md`.

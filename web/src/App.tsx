@@ -5,8 +5,9 @@ import {
   isRetail, penaltyRatePercent, penaltySplit, referralSplit,
   vestedAmount, workedChecks,
 } from './lib/math'
-import { BADGES, CAPSULES, CREWS, DEMO_AIRDROP, DEMO_CAMPAIGNS, PACKAGES, PLACES, SHOP_ITEMS, guideAnswer } from './lib/data'
+import { BADGES, CAPSULES, CREWS, DEMO_AIRDROP, DEMO_CAMPAIGNS, PACKAGES, PLACES, guideAnswer } from './lib/data'
 import { DIALOGS, DIALOG_BY_ID } from './lib/dialogs'
+import { BULLSEYE, CANVAS, CANVAS_TEST, DELIVERY_CHECKLISTS, DEVNET_FIRST, EVIDENCE, FAQ, GATES, GUIDE_TESTS, MODELS, PIRATES_RULES, PRICING_ROWS, PREPAYMENT_BLOCKERS, RISK_REGISTER, SCENARIOS, SOPS, TEAM, TECH_CHECKLIST, COMM_CHECKLIST, TX_STATUSES, WALLET_SAFETY } from './lib/v2'
 import type { DialogAction, DialogDef } from './lib/dialogs'
 import type { Campaign, Crew, Place } from './lib/data'
 
@@ -36,6 +37,8 @@ export type PageId =
   | 'claim-review' | 'airdrop-eligibility' | 'capsule-opening' | 'wallet'
   | 'capsule-review' | 'capsule-guide' | 'share' | 'activity' | 'rankings'
   | 'pirates' | 'earn' | 'vault' | 'capsules' | 'builders'
+  | 'mainnet' | 'token' | 'flows' | 'canvas' | 'models' | 'pricing'
+  | 'evidence' | 'wallet-safety' | 'operations' | 'gates' | 'faq'
 
 export const PAGES: { id: PageId; title: string; group: string; blurb: string }[] = [
   { id: 'home', title: 'Home — The playground on Solana', group: 'Player', blurb: 'Welcome to the test world. Big curiosity. New possibilities.' },
@@ -77,6 +80,17 @@ export const PAGES: { id: PageId; title: string; group: string; blurb: string }[
   { id: 'refund-center', title: 'Refund center', group: 'Studio', blurb: 'Ask for a refund, see the calculation, track the decision.' },
   { id: 'business', title: 'Business', group: 'Studio', blurb: 'Packages, scope, readiness and the operating model.' },
   { id: 'business-model', title: 'Business model', group: 'Studio', blurb: 'The canvas, the unit economics, the roadmap.' },
+  { id: 'mainnet', title: 'Network & mainnet readiness', group: 'Help', blurb: 'Target: Solana mainnet-beta. Current: devnet. Gates 1–5, honestly marked.' },
+  { id: 'token', title: 'Token economics', group: 'Player', blurb: '1B mint cap, the buckets, vesting worked examples, corrected C.6.' },
+  { id: 'flows', title: 'Referrals & money flows', group: 'Player', blurb: '10/2/88, the fairness rules, and three money flows never mixed.' },
+  { id: 'evidence', title: 'Evidence classes', group: 'Player', blurb: 'Sessions are not people. Test SOL is never revenue.' },
+  { id: 'wallet-safety', title: 'Wallet safety', group: 'Help', blurb: 'The 5 checks. Nexus never asks for a seed phrase or private key. Ever.' },
+  { id: 'faq', title: 'FAQ — honest answers', group: 'Help', blurb: 'Short answers, no promises. Is Nexus using real money now? No.' },
+  { id: 'canvas', title: 'Business Model Canvas', group: 'Business', blurb: 'The nine blocks, after Osterwalder & Pigneur.' },
+  { id: 'models', title: 'The five scholarly models', group: 'Business', blurb: 'Canvas → Lean → Platform → Positioning → Jobs/Traction/Flywheel.' },
+  { id: 'pricing', title: 'Pricing & unit economics', group: 'Business', blurb: 'Free pilot, 750 Studio, 2,000 Growth — and what each one earns.' },
+  { id: 'operations', title: 'Operations', group: 'Business', blurb: 'Delivery checklists, team, rhythms, Bullseye experiments.' },
+  { id: 'gates', title: 'Gates, risk & checklists', group: 'Business', blurb: 'Gates 1–5 pass/kill criteria, risk register, SOPs.' },
   { id: 'scenarios', title: 'Prototype scenarios', group: 'Index', blurb: 'Every page and every dialog, in one place.' },
   { id: 'journeys', title: 'Journey directory', group: 'Index', blurb: 'Eight journeys through the whole prototype.' },
   { id: 'builders', title: 'For builders & studios', group: 'Studio', blurb: 'Contract, gates and the 14 worked-example checks.' },
@@ -97,11 +111,11 @@ export const JOURNEYS: Journey[] = [
   { id: 'j5', title: '5 · Studio & campaign lifecycle', blurb: 'Sign in, draft, publish, launch, report, refund — the whole campaign life.', steps: [
     { label: 'Studio sign-in', page: 'studio-signin' }, { label: 'Sign-in email sent', dialog: 'signin-sent' }, { label: 'Sign-in link expired', dialog: 'signin-expired' }, { label: 'Campaigns', page: 'campaigns' }, { label: 'Campaign editor', page: 'campaign-editor' }, { label: 'Draft saved', dialog: 'draft-saved' }, { label: 'Discard unsaved changes', dialog: 'discard-changes' }, { label: 'Delete draft campaign', dialog: 'delete-draft' }, { label: 'Campaign dashboard', page: 'campaign-dashboard' }, { label: 'Review campaign publication', dialog: 'review-publication' }, { label: 'Publication blocked', dialog: 'publication-blocked' }, { label: 'Campaign published', dialog: 'campaign-published' }, { label: 'Campaign live', page: 'campaign-live' }, { label: 'Launch controls', page: 'launch-controls' }, { label: 'Campaign completed', page: 'campaign-completed' }, { label: 'Campaign cancelled', page: 'campaign-cancelled' }, { label: 'Cancel campaign', dialog: 'cancel-campaign' }, { label: 'Campaign report', page: 'campaign-report' }, { label: 'Export campaign report', dialog: 'export-report' }, { label: 'Report data gap', dialog: 'report-gap' }, { label: 'Refund center', page: 'refund-center' }, { label: 'Review refund calculation', dialog: 'review-refund-calc' }, { label: 'Refund request received', dialog: 'refund-received' } ] },
   { id: 'j6', title: '6 · Authority & release', blurb: 'Launch steps are authority steps — gates are separate from wallet approval.', steps: [
-    { label: 'Launch controls', page: 'launch-controls' }, { label: 'Initialize pool review', dialog: 'init-pool-review' }, { label: 'Finalize sale review', dialog: 'finalize-review' }, { label: 'Activate launch review', dialog: 'activate-review' }, { label: 'Authority access denied', dialog: 'authority-denied' }, { label: 'For builders & studios', page: 'builders' } ] },
+    { label: 'Launch controls', page: 'launch-controls' }, { label: 'Initialize pool review', dialog: 'init-pool-review' }, { label: 'Finalize sale review', dialog: 'finalize-review' }, { label: 'Activate launch review', dialog: 'activate-review' }, { label: 'Authority access denied', dialog: 'authority-denied' }, { label: 'Network & mainnet readiness', page: 'mainnet' }, { label: 'Gates, risk & checklists', page: 'gates' }, { label: 'For builders & studios', page: 'builders' } ] },
   { id: 'j7', title: '7 · Guidance, help & recovery', blurb: 'Ask the guide, read how it works, get help, recover a session.', steps: [
-    { label: 'AI guide', page: 'ai-guide' }, { label: 'Answer stopped', dialog: 'answer-stopped' }, { label: 'Guide unavailable', dialog: 'guide-unavailable' }, { label: 'How it works', page: 'how-it-works' }, { label: 'Safety & support', page: 'safety' }, { label: 'Support request received', dialog: 'support-received' }, { label: 'Support submission failed', dialog: 'support-failed' }, { label: 'Recovery states', page: 'recovery' }, { label: 'Session expired', dialog: 'session-expired' }, { label: 'Campaign terms & privacy', page: 'terms' }, { label: 'Legal policy pending', dialog: 'legal-pending' } ] },
+    { label: 'AI guide', page: 'ai-guide' }, { label: 'Answer stopped', dialog: 'answer-stopped' }, { label: 'Guide unavailable', dialog: 'guide-unavailable' }, { label: 'How it works', page: 'how-it-works' }, { label: 'Safety & support', page: 'safety' }, { label: 'Support request received', dialog: 'support-received' }, { label: 'Support submission failed', dialog: 'support-failed' }, { label: 'Recovery states', page: 'recovery' }, { label: 'Session expired', dialog: 'session-expired' }, { label: 'Campaign terms & privacy', page: 'terms' }, { label: 'Legal policy pending', dialog: 'legal-pending' }, { label: 'Wallet safety', page: 'wallet-safety' }, { label: 'Network & mainnet readiness', page: 'mainnet' }, { label: 'FAQ — honest answers', page: 'faq' } ] },
   { id: 'j8', title: '8 · Business & operating model', blurb: 'Packages, scope, readiness, fees, the canvas and the roadmap.', steps: [
-    { label: 'Business', page: 'business' }, { label: 'Business model', page: 'business-model' }, { label: 'Campaigns', page: 'campaigns' }, { label: 'Refund center', page: 'refund-center' }, { label: 'Request hosting refund', dialog: 'request-hosting-refund' }, { label: 'Refund under review', dialog: 'refund-review' }, { label: 'Refund approved', dialog: 'refund-approved' }, { label: 'Refund processing', dialog: 'refund-processing' }, { label: 'Refund completed', dialog: 'refund-completed' }, { label: 'Refund rejected', dialog: 'refund-rejected' }, { label: 'Refund failed', dialog: 'refund-failed' } ] },
+    { label: 'Business', page: 'business' }, { label: 'Business model', page: 'business-model' }, { label: 'Business Model Canvas', page: 'canvas' }, { label: 'The five scholarly models', page: 'models' }, { label: 'Pricing & unit economics', page: 'pricing' }, { label: 'Token economics', page: 'token' }, { label: 'Referrals & money flows', page: 'flows' }, { label: 'Evidence classes', page: 'evidence' }, { label: 'Operations', page: 'operations' }, { label: 'Gates, risk & checklists', page: 'gates' }, { label: 'Campaigns', page: 'campaigns' }, { label: 'Refund center', page: 'refund-center' }, { label: 'Request hosting refund', dialog: 'request-hosting-refund' }, { label: 'Refund under review', dialog: 'refund-review' }, { label: 'Refund approved', dialog: 'refund-approved' }, { label: 'Refund processing', dialog: 'refund-processing' }, { label: 'Refund completed', dialog: 'refund-completed' }, { label: 'Refund rejected', dialog: 'refund-rejected' }, { label: 'Refund failed', dialog: 'refund-failed' } ] },
 ]
 
 interface Deposit {
@@ -195,10 +209,6 @@ export default function App() {
   const [modalStep, setModalStep] = useState<'detail' | 'confirm' | 'success'>('detail')
   const [lastClaim, setLastClaim] = useState<{ net: number; penalty: number; gross: number; burned: number; escrow: number } | null>(null)
   const [visibleVaults, setVisibleVaults] = useState(5)
-  const [shards, setShards] = useState(0)
-  const [shardsEarned, setShardsEarned] = useState(0)
-  const [claimedDate, setClaimedDate] = useState('')
-  const [ownedItems, setOwnedItems] = useState<string[]>([])
   const [charIndex, setCharIndex] = useState(0)
   const [airdropName, setAirdropName] = useState('')
   const [airdropWallet, setAirdropWallet] = useState('')
@@ -206,7 +216,6 @@ export default function App() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState<{ x: number; y: number; px: number; py: number } | null>(null)
-  const [sortBy, setSortBy] = useState<'xp' | 'shards'>('xp')
   const [selectedCapsule, setSelectedCapsule] = useState('free')
   const [studioSignedIn, setStudioSignedIn] = useState(false)
   const [studioEmail, setStudioEmail] = useState('')
@@ -228,17 +237,16 @@ export default function App() {
   const retail = isRetail(totalGross)
   const elapsedSeconds = elapsedHours * 3600
   const totalOpens = Object.values(opens).reduce((a, b) => a + b, 0)
-  const xp = totalOpens * 10 + deposits.length * 50 + joined.length * 20 + (claimedDate ? 20 : 0)
+  const claimedAny = Object.keys(claimedByVault).length > 0
+  const xp = totalOpens * 10 + deposits.length * 50 + joined.length * 20 + (claimedAny ? 20 : 0)
   const rank = RANKS[Math.min(RANKS.length - 1, Math.floor(xp / 100))]
-  const today = new Date().toDateString()
-  const canClaimDaily = claimedDate !== today
-  const badgesEarned = [totalOpens > 0 ? 'first-open' : '', deposits.length > 0 ? 'first-join' : '', copied ? 'first-invite' : '', claimedDate ? 'first-claim' : '', joined.length > 0 ? 'crew-mate' : ''].filter(Boolean)
+  const badgesEarned = [totalOpens > 0 ? 'first-open' : '', deposits.length > 0 ? 'first-join' : '', copied ? 'first-invite' : '', claimedAny ? 'first-claim' : '', joined.length > 0 ? 'crew-mate' : ''].filter(Boolean)
   const leaderboard = useMemo(() => {
-    const rows = crews.map((c) => ({ name: c.name, members: c.members, xp: c.points, shards: c.shards, you: false }))
-    rows.push({ name: connected ? `You (${address})` : 'You', members: 1, xp, shards: shardsEarned, you: true })
-    rows.sort((a, b) => (sortBy === 'xp' ? b.xp - a.xp : b.shards - a.shards))
+    const rows = crews.map((c) => ({ name: c.name, members: c.members, xp: c.points, you: false }))
+    rows.push({ name: connected ? `You (${address})` : 'You', members: 1, xp, you: true })
+    rows.sort((a, b) => b.xp - a.xp)
     return rows
-  }, [crews, xp, shardsEarned, sortBy, connected, address])
+  }, [crews, xp, connected, address])
   const myRank = leaderboard.findIndex((r) => r.you) + 1
   const allocationForDeposit = (d: Deposit) => (d.isAirdrop ? d.airdropAllocation || 0 : finalized ? allocationFor(d.amount, totalGross) : 0)
   const unlockedForDeposit = (d: Deposit) => {
@@ -285,17 +293,6 @@ export default function App() {
   function openCapsule(id: string) {
     setOpened((o) => ({ ...o, [id]: true })); setOpens((o) => ({ ...o, [id]: (o[id] || 0) + 1 }))
     setSelectedCapsule(id); logActivity(`Opened a capsule preview (${id}).`)
-  }
-  function claimDaily() {
-    if (!canClaimDaily) return
-    setShards((s) => s + 10); setShardsEarned((s) => s + 10); setClaimedDate(today)
-    setNotice('Nice — you claimed 10 Shards for today. Come back tomorrow for 10 more. Shards are practice points, not money and not tokens.')
-    logActivity('Claimed 10 daily Shards.')
-  }
-  function buyItem(id: string, cost: number, name: string) {
-    if (shards < cost) { setNotice(`You need ${cost} Shards for that — you have ${shards}. Claim your daily Shards or open more capsules.`); return }
-    setShards((s) => s - cost); setOwnedItems((o) => [...o, id])
-    setNotice(`You got the ${name}! It is yours in this demo. It changes nothing about your share — it is just for fun.`)
   }
   function deposit() {
     if (!connected) { setShowWalletSheet(true); return }
@@ -354,8 +351,8 @@ export default function App() {
   }
   function resetProgress() {
     setDeposits([]); setClaimedByVault({}); setFinalized(false); setLaunched(false); setElapsedHours(0)
-    setBurned(0); setEscrow(0); setOpened({}); setOpens({}); setJoined([]); setShards(0); setShardsEarned(0)
-    setClaimedDate(''); setOwnedItems([]); setAirdropResult('idle'); setActivityLog(['Started over — fresh demo.'])
+    setBurned(0); setEscrow(0); setOpened({}); setOpens({}); setJoined([])
+    setAirdropResult('idle'); setActivityLog(['Started over — fresh demo.'])
     setDialogId(null); setNotice('Started over. Everything in the demo is fresh.'); go('capsules')
   }
   function askGuide(q: string) {
@@ -410,7 +407,7 @@ export default function App() {
   const studioNav: { id: PageId; label: string }[] = [
     { id: 'campaigns', label: 'Campaigns' }, { id: 'share', label: 'Share' }, { id: 'launch-controls', label: 'Launch controls' }, { id: 'business', label: 'Business' },
   ]
-  const isStudioPage = ['campaigns', 'campaign-editor', 'campaign-dashboard', 'campaign-management', 'campaign-report', 'campaign-live', 'campaign-completed', 'campaign-cancelled', 'public-campaign', 'studio-signin', 'launch-controls', 'refund-center', 'business', 'business-model', 'builders'].includes(page)
+  const isStudioPage = ['campaigns', 'campaign-editor', 'campaign-dashboard', 'campaign-management', 'campaign-report', 'campaign-live', 'campaign-completed', 'campaign-cancelled', 'public-campaign', 'studio-signin', 'launch-controls', 'refund-center', 'business', 'business-model', 'builders', 'canvas', 'models', 'pricing', 'operations', 'gates', 'mainnet', 'token', 'flows', 'evidence'].includes(page)
   const capsuleTier = (id: string) => (id === 'free' ? 'green' : id === 'retail' ? 'orange' : 'purple') as 'green' | 'orange' | 'purple'
 
   const pageMeta = PAGE_BY_ID[page]
@@ -426,7 +423,6 @@ export default function App() {
           <button onClick={() => go('how-it-works')}>How it works</button>
         </div>
         <span className="spacer" style={{ flex: 1 }} />
-        <span className="shards-chip" title="Shards are practice points — not money, not tokens">🔮 {shards} Shards</span>
         {connected
           ? <button className="wallet-chip" onClick={() => setDialogId('wallet-menu')}>Demo · {address}</button>
           : <button className="pill connect-pill" onClick={() => setDialogId('choose-wallet')}>Connect wallet</button>}
@@ -531,8 +527,8 @@ export default function App() {
               <div className="badge-row">
                 {BADGES.map((b) => { const earned = badgesEarned.includes(b.id); return (<div key={b.id} className={`badge${earned ? ' earned' : ''}`} title={b.desc}><span aria-hidden="true">{b.emoji}</span><strong>{b.name}</strong><span className="small muted">{earned ? 'Earned ✓' : 'Not yet'}</span></div>) })}
               </div>
-              <p className="small muted">XP: <b>{xp}</b> (10 per capsule open · 50 per join · 20 per crew joined · 20 per daily claim) · Rank: <b>{rank}</b></p>
-              <button className="pill" onClick={claimDaily} disabled={!canClaimDaily}>{canClaimDaily ? '🔮 Claim 10 daily Shards' : '✓ Daily Shards claimed — back tomorrow'}</button>
+              <p className="small muted">XP: <b>{xp}</b> (10 per capsule open · 50 per join · 20 per crew joined · 20 per first claim) · Rank: <b>{rank}</b></p>
+              <p className="small muted">Pins &amp; badges are device-local game marks — not tokens, not money, not transferable, and they never change your share.</p>
             </section>
           </section>
         )}
@@ -627,6 +623,7 @@ export default function App() {
                   <p className="small muted">{launched ? `${elapsedHours} hours have passed of 3 days.` : 'The 3-day clock has not started yet.'}</p>
                   <div className="field"><label>Move the clock — see what you could take (hours: {elapsedHours})</label><input type="range" min="0" max="72" value={elapsedHours} disabled={!launched} onChange={(e) => setElapsedHours(Number(e.target.value))} /></div>
                   <div className="row"><button className="pill" onClick={() => setElapsedHours((h) => Math.min(72, h + 12))} disabled={!launched}>+12 hours</button><button className="pill" onClick={() => setElapsedHours(72)} disabled={!launched}>Jump to 3 days</button></div>
+                  <p className="small muted">This slider is a calculator, not a time machine. The network clock governs — moving the slider changes nothing on-chain. Claimable = vested − already taken, never below zero.</p>
                   <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch', marginTop: 12 }}>
                     <button className="btn ghost" onClick={() => { setFinalized(true); setDialogId('deposit-finalized'); logActivity('Sale finalised — shares fixed.') }} disabled={finalized || deposits.length === 0}>1 · Close the sale</button>
                     <button className="btn ghost" onClick={() => { setLaunched(true); setNotice('The launch started. The 3-day clock is running.'); logActivity('Launch activated — 72-hour clock started.') }} disabled={!finalized || launched}>2 · Start the launch</button>
@@ -741,14 +738,6 @@ export default function App() {
               <p className="small muted">Example: if your friend joins with 1, you get 0.10. If they join with 10, you get 1.00.</p>
               <div className="row"><button className="pill" onClick={() => go('referral-account')}>My referral account</button><button className="pill" onClick={() => go('share')}>Share my adventure</button></div>
             </div>
-            <section className="card" style={{ marginTop: 14 }}>
-              <h2>Shards Store — the Arcade</h2>
-              <p className="muted">Spend Shards on fun things. Shards are practice points — <strong>not money, not tokens</strong>.</p>
-              <p>Your Shards: <b>🔮 {shards}</b> · <button className="pill" onClick={claimDaily} disabled={!canClaimDaily}>{canClaimDaily ? 'Claim 10 daily Shards' : 'Daily Shards claimed'}</button></p>
-              <div className="grid cols-2">
-                {SHOP_ITEMS.map((item) => { const owned = ownedItems.includes(item.id); return (<article key={item.id} className="card shop-item" style={{ boxShadow: 'none' }}><div className="shop-emoji" aria-hidden="true">{item.emoji}</div><h3>{item.name}</h3><p className="small muted">{item.blurb}</p><div className="kv"><span>Price</span><b>🔮 {item.cost} Shards</b></div><button className="btn small" onClick={() => buyItem(item.id, item.cost, item.name)} disabled={owned || shards < item.cost}>{owned ? 'Owned ✓' : shards < item.cost ? 'Not enough Shards' : 'Buy with Shards'}</button></article>) })}
-              </div>
-            </section>
           </section>
         )}
 
@@ -786,13 +775,13 @@ export default function App() {
               {crews.map((c) => (
                 <article key={c.id} className="card">
                   <h3>🏴‍☠️ {c.name}</h3>
-                  <p className="muted">{c.members} members · {c.points.toLocaleString()} XP · 🔮 {c.shards} Shards</p>
+                  <p className="muted">{c.members} members · {c.points.toLocaleString()} crew points (device-local)</p>
                   <p>Challenge: {c.challenge}</p>
                   <div className="row">
                     {joined.includes(c.id)
                       ? <><button className="pill" onClick={() => go('crew-progress')}>See my progress</button><button className="pill" onClick={() => setDialogId('leave-crew')}>Leave crew</button></>
                       : <button className="btn small" onClick={() => setDialogId('join-crew')}>Join crew</button>}
-                    <button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50, shards: x.shards + 5 } : x))} disabled={!joined.includes(c.id)}>Complete challenge · +50 XP</button>
+                    <button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50 } : x))} disabled={!joined.includes(c.id)}>Complete challenge · +50 XP</button>
                   </div>
                 </article>
               ))}
@@ -812,7 +801,7 @@ export default function App() {
                   <div className="kv"><span>Challenge</span><b>{c.challenge}</b></div>
                   <div className="progress"><div style={{ width: `${Math.min(100, (c.points % 200) / 2)}%` }} /></div>
                   <p className="small muted">Progress is local to this demo. Complete the challenge to earn +50 XP.</p>
-                  <div className="row"><button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50, shards: x.shards + 5 } : x))}>Complete challenge · +50 XP</button><button className="pill" onClick={() => setDialogId('leave-crew')}>Leave crew</button><button className="pill" onClick={() => setDialogId('reset-progress')}>Reset local progress</button></div>
+                  <div className="row"><button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50 } : x))}>Complete challenge · +50 XP</button><button className="pill" onClick={() => setDialogId('leave-crew')}>Leave crew</button><button className="pill" onClick={() => setDialogId('reset-progress')}>Reset local progress</button></div>
                 </div>
               ))
             )}
@@ -823,8 +812,8 @@ export default function App() {
           <section>
             <div className="page-head"><p className="eyebrow">Crew standings</p><h1>Every crew, ranked.</h1><p className="muted">Points come from playing — challenges, opens, invites. Example values, from the seeded demo crews.</p></div>
             <div className="card" style={{ marginTop: 14 }}>
-              <div className="table-wrap"><table><thead><tr><th>Rank</th><th>Crew</th><th>Members</th><th>XP</th><th>Shards</th></tr></thead><tbody>
-                {[...crews].sort((a, b) => b.points - a.points).map((c, i) => (<tr key={c.id}><td>#{i + 1}</td><td><strong>🏴‍☠️ {c.name}</strong></td><td>{c.members}</td><td>{c.points.toLocaleString()}</td><td>🔮 {c.shards}</td></tr>))}
+              <div className="table-wrap"><table><thead><tr><th>Rank</th><th>Crew</th><th>Members</th><th>Crew points</th></tr></thead><tbody>
+                {[...crews].sort((a, b) => b.points - a.points).map((c, i) => (<tr key={c.id}><td>#{i + 1}</td><td><strong>🏴‍☠️ {c.name}</strong></td><td>{c.members}</td><td>{c.points.toLocaleString()}</td></tr>))}
               </tbody></table></div>
               <p className="small muted">Seeded demo crews — example values, not real people.</p>
               <button className="pill" onClick={() => go('pirates')}>Back to Pirates</button>
@@ -834,19 +823,17 @@ export default function App() {
 
         {page === 'rankings' && (
           <section>
-            <div className="page-head"><p className="eyebrow">Rankings</p><h1>Hall of Legends.</h1><p className="muted">The top collectors in the Bay. XP comes from playing — opening capsules, joining, inviting, claiming daily Shards.</p></div>
+            <div className="page-head"><p className="eyebrow">Rankings</p><h1>Hall of Legends.</h1><p className="muted">The top collectors in the Bay. Points come from playing — opening capsules, joining, inviting. Points are device-local game points — not tokens, not money, not a verified ranking of unique people.</p></div>
             <section className="card" style={{ marginTop: 14 }}>
               <div className="podium">
                 {leaderboard.slice(0, 3).map((r, i) => (
-                  <div key={r.name} className={`podium-card place-${i + 1}`}><div className="podium-medal" aria-hidden="true">{['🥇', '🥈', '🥉'][i]}</div><strong>{r.name}</strong><span className="stat-num">{sortBy === 'xp' ? `${r.xp} XP` : `🔮 ${r.shards}`}</span><span className="small muted">{r.members} {r.members === 1 ? 'collector' : 'collectors'}</span></div>
+                  <div key={r.name} className={`podium-card place-${i + 1}`}><div className="podium-medal" aria-hidden="true">{['🥇', '🥈', '🥉'][i]}</div><strong>{r.name}</strong><span className="stat-num">{r.xp} XP</span><span className="small muted">{r.members} {r.members === 1 ? 'collector' : 'collectors'}</span></div>
                 ))}
               </div>
               <div className="row" style={{ marginTop: 14 }}>
-                <button className={`pill${sortBy === 'xp' ? ' active' : ''}`} onClick={() => setSortBy('xp')}>Sort by XP</button>
-                <button className={`pill${sortBy === 'shards' ? ' active' : ''}`} onClick={() => setSortBy('shards')}>Sort by Shards earned</button>
-                <span className="small muted">My Rank: <b>#{myRank}</b> of {leaderboard.length} · You: <b>{xp} XP</b> · <b>🔮 {shardsEarned} Shards</b></span>
+                <span className="small muted">My Rank: <b>#{myRank}</b> of {leaderboard.length} · You: <b>{xp} XP</b></span>
               </div>
-              <div className="table-wrap" style={{ marginTop: 12 }}><table><thead><tr><th>Rank</th><th>Collector</th><th>XP</th><th>Shards earned</th></tr></thead><tbody>{leaderboard.map((r, i) => (<tr key={r.name} className={r.you ? 'you-row' : ''}><td>#{i + 1}</td><td><strong>{r.name}</strong>{r.you ? ' — that is you!' : ''}</td><td>{r.xp}</td><td>🔮 {r.shards}</td></tr>))}</tbody></table></div>
+              <div className="table-wrap" style={{ marginTop: 12 }}><table><thead><tr><th>Rank</th><th>Collector</th><th>XP</th></tr></thead><tbody>{leaderboard.map((r, i) => (<tr key={r.name} className={r.you ? 'you-row' : ''}><td>#{i + 1}</td><td><strong>{r.name}</strong>{r.you ? ' — that is you!' : ''}</td><td>{r.xp}</td></tr>))}</tbody></table></div>
               <p className="small muted">In this demo, the crews are seeded practice crews and your row is your real simulated play. Nobody here is a real person with real earnings.</p>
             </section>
           </section>
@@ -921,6 +908,13 @@ export default function App() {
               {guideState === 'stopped' && <p className="small muted">The answer stopped. Your question is preserved above — ask it again.</p>}
               <p className="small muted">Example answer, verified: “Does 3 SOL make me whale?” → “Yes. The boundary is cumulative.”</p>
             </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>What this guide is — and is not</h2>
+              <p className="muted">I answer only from the approved Nexus facts: tiers, splits, vesting, devnet limits. I say “unknown” for odds, rewards, or live deployment status. I am <strong>not</strong> a wallet, an oracle, an investment adviser, an eligibility engine, or an audit. Never paste a seed phrase or sensitive record into me.</p>
+              <h3>Test questions — with the correct answers</h3>
+              {GUIDE_TESTS.map((t) => (<div key={t.q} className="kv"><span>{t.q}</span><b>{t.a}</b></div>))}
+              <div className="row"><button className="pill" onClick={() => go('faq')}>FAQ — honest answers</button><button className="pill" onClick={() => go('how-it-works')}>How it works</button></div>
+            </div>
           </section>
         )}
 
@@ -933,7 +927,7 @@ export default function App() {
               <h2>3 · The sale closes</h2><p>At 15,000 SOL, or when it is closed by hand. Your share is fixed: what you put in ÷ what everyone put in × 400,000,000 tokens.</p>
               <h2>4 · The launch starts</h2><p>The 3-day clock runs. Small joins (2 or less in total) are ready in full. Big joins unlock a little at a time.</p>
               <h2>5 · Take your share</h2><p>Take what is ready. Taking a big share early costs 25% / 15% / 5% / 0%. Most of the cost disappears forever; a small part goes to the rewards pot.</p>
-              <h2>6 · Invite, crew up, collect</h2><p>Invite friends, join a Pirates crew, collect Shards and badges. A game — not money.</p>
+              <h2>6 · Invite, crew up, collect</h2><p>Invite friends, join a Pirates crew, collect device-local points and badges. A game — not money.</p>
               <h2>Allocation math, worked</h2>
               <div className="kv"><span>1 SOL of 100 SOL total</span><b>4,000,000 tokens</b></div>
               <div className="kv"><span>1,000,000 tokens at 12h</span><b>166,667 ready (not 500,000)</b></div>
@@ -950,6 +944,8 @@ export default function App() {
             <div className="card" style={{ marginTop: 14 }}>
               <h2>Three rules</h2>
               <p>1 · Never share a secret phrase or password — not here, not anywhere.<br />2 · Test SOL has no cash value. Nobody can sell you “real” Nexus tokens here.<br />3 · If a deal sounds guaranteed, it is not Nexus.</p>
+              <p><strong>Nexus never asks for a seed phrase or private key. Ever.</strong> Any screen that does is not Nexus.</p>
+              <div className="row"><button className="pill" onClick={() => go('wallet-safety')}>Wallet safety — the 5 checks</button><button className="pill" onClick={() => go('mainnet')}>Mainnet readiness</button><button className="pill" onClick={() => go('faq')}>FAQ — honest answers</button></div>
               <h2>Ask for help</h2>
               <div className="field"><label>What do you need help with?</label><input value={supportMsg} onChange={(e) => setSupportMsg(e.target.value)} placeholder="e.g. I cannot see my vault" /></div>
               <button className="btn" style={{ width: 'auto' }} onClick={() => { if (!supportMsg.trim()) { setNotice('Write a line about the problem first.'); return } setDialogId('support-received') }}>Send the request</button>
@@ -1240,11 +1236,15 @@ export default function App() {
           <section>
             <div className="page-head"><p className="eyebrow">Business model</p><h1>The model, on one page.</h1><p className="muted">Canvas, unit economics and the roadmap — all labelled as examples where they are examples.</p></div>
             <div className="card" style={{ marginTop: 14 }}>
-              <h2>Business Model Canvas (example)</h2>
-              <div className="kv"><span>Players get</span><b>A playful way into Solana — capsules, crews, referrals</b></div>
-              <div className="kv"><span>Studios get</span><b>Real players trying their game, with evidence</b></div>
-              <div className="kv"><span>Nexus earns</span><b>Studio packages: free pilot, 750 USDC Studio, 2,000 USDC Growth</b></div>
-              <div className="kv"><span>Costs</span><b>Hosting, support, rewards handling — by written scope</b></div>
+              <h2>The model, in full</h2>
+              <p className="muted">The canvas, the five scholarly models, pricing and unit economics, and operations each have their own page — all from v2.0, all labelled where they are examples.</p>
+              <div className="row">
+                <button className="pill" onClick={() => go('canvas')}>Business Model Canvas</button>
+                <button className="pill" onClick={() => go('models')}>The five scholarly models</button>
+                <button className="pill" onClick={() => go('pricing')}>Pricing &amp; unit economics</button>
+                <button className="pill" onClick={() => go('operations')}>Operations</button>
+                <button className="pill" onClick={() => go('gates')}>Gates, risk &amp; checklists</button>
+              </div>
               <h2>Unit economics (example)</h2>
               <div className="kv"><span>Studio package</span><b>750 USDC</b></div>
               <div className="kv"><span>Variable cost</span><b>Example: 150 USDC</b></div>
@@ -1252,7 +1252,7 @@ export default function App() {
               <div className="kv"><span>Break-even</span><b>Example: 5 campaigns at 3,000 USDC fixed overhead</b></div>
               <h2>Release roadmap (example)</h2>
               <p className="muted">1 · Devnet pilots (5 unpaid) → 2 · Verified deposit-to-claim run → 3 · Security + legal review → 4 · Commercial launch decision. None of these is done yet.</p>
-              <div className="row"><button className="pill" onClick={() => go('business')}>Back to Business</button><button className="pill" onClick={() => go('launch-controls')}>Launch readiness</button></div>
+              <div className="row"><button className="pill" onClick={() => go('business')}>Back to Business</button><button className="pill" onClick={() => go('launch-controls')}>Launch readiness</button><button className="pill" onClick={() => go('mainnet')}>Mainnet readiness</button></div>
             </div>
           </section>
         )}
@@ -1285,14 +1285,288 @@ export default function App() {
             <div className="card" style={{ marginTop: 14 }}>
               <h2>Launch Gates 1–5 — still open</h2>
               <ol>
-                <li><strong>Gate 1:</strong> reviewed source + tests — <span className="tag warn">Open</span> — <code>anchor test</code> not yet run.</li>
+                <li><strong>Gate 1:</strong> reviewed source + tests — <span className="tag warn">In progress</span> — anchor test running (Phase 1 on-chain tests, separate run).</li>
                 <li><strong>Gate 2:</strong> devnet configuration — <span className="tag warn">Open</span> — no funded deployment signer.</li>
                 <li><strong>Gate 3:</strong> complete devnet execution — <span className="tag warn">Open</span> — deposit → claim not verified on-chain.</li>
                 <li><strong>Gate 4:</strong> 5 unpaid devnet pilots — <span className="tag gated">Not started</span></li>
                 <li><strong>Gate 5:</strong> commercial readiness + mainnet decision — <span className="tag gated">Not started</span> — needs independent security + legal review.</li>
               </ol>
               <p className="small muted">Deliberately absent from the contract: no SOL withdrawal / liquidity-migration instruction and no contribution-refund instruction. Do not accept production funds expecting one.</p>
-              <div className="row"><button className="pill" onClick={() => go('launch-controls')}>Launch controls</button><button className="pill" onClick={() => go('campaign-dashboard')}>Campaign dashboard</button></div>
+              <div className="row"><button className="pill" onClick={() => go('launch-controls')}>Launch controls</button><button className="pill" onClick={() => go('mainnet')}>Mainnet readiness</button><button className="pill" onClick={() => go('gates')}>Gates, risk &amp; checklists</button><button className="pill" onClick={() => go('campaign-dashboard')}>Campaign dashboard</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'mainnet' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Network &amp; mainnet readiness</p><h1>Mainnet-ready, not mainnet-live.</h1><p className="muted">The target and the truth, side by side. Nothing here is live on mainnet.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <p><strong>{DEVNET_FIRST}</strong></p>
+              <div className="kv"><span>Target network</span><b>Solana mainnet-beta</b></div>
+              <div className="kv"><span>Current network</span><b>Solana devnet (test network)</b></div>
+              <div className="kv"><span>Deposits &amp; claims</span><b>GATED — simulated, test SOL only, until Gates 1–3 pass</b></div>
+              <div className="kv"><span>Paid checkout</span><b>Not active</b></div>
+              <div className="kv"><span>Production reward custody</span><b>Not active</b></div>
+              <div className="kv"><span>Mainnet launch</span><b>Not active — needs its own approval + independent security review</b></div>
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Gates 1–5 — pass / kill criteria</h2>
+              {GATES.map((g) => (
+                <div key={g.n} style={{ marginBottom: 14 }}>
+                  <h3>Gate {g.n} · {g.title} — <span className={`tag ${g.status === 'in-progress' ? 'warn' : 'gated'}`}>{g.statusText}</span></h3>
+                  <p className="small muted">Pass requires: {g.pass}</p>
+                  <p className="small muted">Kill / hold if: {g.kill}</p>
+                </div>
+              ))}
+              <p className="small muted">No gate, no launch. No evidence, no claim. No timeline overrides a gate.</p>
+              <div className="row"><button className="pill" onClick={() => go('gates')}>Gates, risk &amp; checklists</button><button className="pill" onClick={() => go('launch-controls')}>Launch controls</button><button className="pill" onClick={() => go('builders')}>For builders &amp; studios</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'token' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Token economics</p><h1>1 billion cap. Proportional means everyone pays the same price.</h1><p className="muted">The contract requires a standard SPL mint with 6 decimals (1 NEXUS = 1,000,000 base units), exactly 1,000,000,000 minted, and mint + freeze authority revoked at initialisation. Those are requirements for a future configured mint — not proof a live mint exists.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>The buckets</h2>
+              <div className="table-wrap"><table><thead><tr><th>Bucket</th><th>Amount</th><th>Status</th><th>Rule</th></tr></thead><tbody>
+                <tr><td><strong>Presale</strong></td><td>400M (40%)</td><td>ESCROW DESIGN</td><td>Proportional allocation at sale close</td></tr>
+                <tr><td><strong>Airdrop</strong></td><td>100M (10%)</td><td>ESCROW DESIGN</td><td>Merkle-list only; vests 72h, no penalty</td></tr>
+                <tr><td><strong>Liquidity</strong></td><td>150M</td><td>RECOMMENDED — NOT approved</td><td rowSpan={5}>Must be visibly accounted for and locked/vested per a published schedule before launch — or the launch does not proceed. Requires founder approval and a locking/vesting mechanism that does not yet exist.</td></tr>
+                <tr><td><strong>Ecosystem</strong></td><td>100M</td><td>RECOMMENDED — NOT approved</td></tr>
+                <tr><td><strong>Team</strong></td><td>100M</td><td>RECOMMENDED — NOT approved</td></tr>
+                <tr><td><strong>Treasury</strong></td><td>100M</td><td>RECOMMENDED — NOT approved</td></tr>
+                <tr><td><strong>Marketing</strong></td><td>50M</td><td>RECOMMENDED — NOT approved</td></tr>
+              </tbody></table></div>
+              <div className="kv"><span>Supply rule</span><b>1B is a mint cap. Supply can only fall, via verified SPL burns. No re-minting once mint authority is revoked.</b></div>
+              <div className="kv"><span>Retail</span><b>Fully claimable after finalisation + launch activation. Claimable is not tradable; no listing is promised.</b></div>
+              <div className="kv"><span>65.12 USD/SOL</span><b>A fixed illustrative baseline from v1 — not a live price. No market-cap figure in this document is a forecast or promise.</b></div>
+              <div className="kv"><span>Allocation</span><b>Your gross ÷ total gross × 400,000,000. Example: 1 SOL of 100 SOL total → 4,000,000 tokens. Hard cap: 15,000 SOL.</b></div>
+              <p className="small muted">The contract in this phase has no SOL withdrawal or liquidity-migration instruction — do not promise migration it cannot do.</p>
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Vesting, worked — corrected (v1 Part C.6 was wrong)</h2>
+              <div className="table-wrap"><table><thead><tr><th>Whale with 7,200 tokens</th><th>Vested</th></tr></thead><tbody>
+                <tr><td>At 12 hours</td><td><b>1,200</b></td></tr>
+                <tr><td>At 24 hours</td><td><b>2,400</b></td></tr>
+                <tr><td>At 48 hours</td><td><b>4,800</b></td></tr>
+                <tr><td>At 72 hours</td><td><b>7,200</b></td></tr>
+              </tbody></table></div>
+              <p className="muted">A separate 1,000,000-token whale claiming the vested amount at hour 12 claims <strong>166,667 gross</strong>, not 500,000 (500,000 is the 36-hour figure). Penalty 25% = <strong>41,667</strong> (33,334 burned, 8,333 to escrow, subject to base-unit rounding), net <strong>125,000</strong>.</p>
+              <div className="kv"><span>Claimable</span><b>Vested − already gross-claimed, never below zero</b></div>
+              <div className="kv"><span>Who governs time</span><b>The network clock. Device clock and the Vault slider govern nothing.</b></div>
+              <div className="kv"><span>Registration</span><b>Does not restart the clock</b></div>
+              <div className="kv"><span>Splitting payments</span><b>Does not preserve retail status — tier is cumulative</b></div>
+              <div className="row"><button className="pill" onClick={() => go('vault')}>See the Vault</button><button className="pill" onClick={() => go('flows')}>Referrals &amp; money flows</button><button className="pill" onClick={() => go('builders')}>The 14 worked-example checks</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'flows' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Referrals &amp; money flows</p><h1>10 / 2 / 88 — paid on-chain, in the same transaction, or not at all.</h1><p className="muted">Missing shares always go to the pool — never silently to Nexus. Integer rounding remainder stays with the pool.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>The split</h2>
+              <div className="table-wrap"><table><thead><tr><th>From a valid deposit</th><th>Share</th><th>On 10 SOL</th><th>On 1 SOL, no referrers</th></tr></thead><tbody>
+                <tr><td>Direct referrer</td><td>10%</td><td>1.00 SOL</td><td>Redirected to pool</td></tr>
+                <tr><td>Upline (referrer&apos;s referrer)</td><td>2%</td><td>0.20 SOL</td><td>Redirected to pool</td></tr>
+                <tr><td>Protocol SOL vault (pool)</td><td>88%</td><td>8.80 SOL</td><td><strong>1.00 SOL total</strong></td></tr>
+              </tbody></table></div>
+              <h2>Rules that keep it fair</h2>
+              <ul>
+                <li>Ancestry is fixed at a wallet&apos;s <strong>first</strong> deposit; a valid parent must predate the child.</li>
+                <li>No self-referral, no cycles — checked by the contract.</li>
+                <li>Two levels only. Commission on a real contribution. No recruitment fee chain.</li>
+                <li>Never promise passive or guaranteed earnings. Income is conditional on valid, successful transactions.</li>
+                <li>The builder may use the authority address as a no-referral sentinel. That is routing, <strong>not</strong> a founder commission.</li>
+                <li>Review resolved recipients before signing.</li>
+              </ul>
+              <h2>What referrals are not</h2>
+              <p className="muted">Not proof of a unique human — one person can control many wallets. Not complete Sybil protection. Not a pyramid: two levels only, commission on a real contribution, no recruitment fee chain.</p>
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Three money flows — never mix them</h2>
+              <div className="table-wrap"><table><thead><tr><th>Flow</th><th>What moves</th><th>Where it goes</th><th>Booked as</th></tr></thead><tbody>
+                <tr><td><strong>A. Protocol contributions</strong></td><td>Wallet-approved SOL deposits</td><td>Referral shares + contract SOL vault</td><td>Not company revenue</td></tr>
+                <tr><td><strong>B. Campaign service fees</strong></td><td>Studio hosting fee, USDC on Solana, by invoice</td><td>Treasury, against a written scope</td><td>Service revenue when earned per the agreement</td></tr>
+                <tr><td><strong>C. Sponsored rewards</strong></td><td>Studio reward budget, invoiced separately</td><td>Separately tracked obligation: pay approved rewards or return unused</td><td>Not revenue</td></tr>
+              </tbody></table></div>
+              <p className="muted">Example: studio fee 750 USDC + illustrative 300 USDC reward budget = 1,050 USDC invoiced if collected together under approved terms. Revenue is still only the earned fee portion. A USDC quote must never be silently converted into a SOL deposit.</p>
+              <div className="row"><button className="pill" onClick={() => go('earn')}>Earn — try the numbers</button><button className="pill" onClick={() => go('pricing')}>Pricing &amp; unit economics</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'evidence' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Evidence classes</p><h1>The reporting rule that protects everyone.</h1><p className="muted">Displaying a number is not calculating it from chain data. Keep the classes separate on every page, every report, every export.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <div className="table-wrap"><table><thead><tr><th>Label</th><th>Counts</th><th>Never say</th></tr></thead><tbody>
+                {EVIDENCE.map((e) => (<tr key={e.label}><td><strong>{e.label}</strong></td><td>{e.counts}</td><td>{e.never}</td></tr>))}
+              </tbody></table></div>
+              <p className="small muted">Exports must carry evidence class + network beside every number.</p>
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Transaction statuses</h2>
+              {TX_STATUSES.map((t) => (<div key={t.status} className="kv"><span><strong>{t.status}</strong></span><b>{t.meaning}</b></div>))}
+              <p className="muted">Awaiting approval → Submitted (signature returned) → Confirmed → <strong>Finalised</strong> (the standard for campaign counting). Failed requires affirmative evidence. Unknown means evidence is incomplete — it is not proof of loss or failure.</p>
+              <div className="row"><button className="pill" onClick={() => go('activity-evidence')}>Activity with evidence</button><button className="pill" onClick={() => go('campaign-dashboard')}>Campaign dashboard</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'wallet-safety' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Wallet safety</p><h1>The 5 checks — every time, before you sign.</h1><p className="muted">A preview never moves SOL, awards tokens, or proves a transaction. A signature is a receipt, not instant settlement.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              {WALLET_SAFETY.map((c) => (<div key={c.n} style={{ marginBottom: 12 }}><h3>{c.n} · {c.title}</h3><p className="muted">{c.text}</p></div>))}
+              <p><strong>Nexus never asks for a seed phrase or private key. Ever.</strong></p>
+              <p className="muted">If a connection drops, check the signature on an explorer before ever repeating a payment. Submitted can still expire or fail.</p>
+              <div className="row"><button className="pill" onClick={() => go('wallet')}>Wallet connection</button><button className="pill" onClick={() => go('safety')}>Safety &amp; support</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'faq' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">FAQ — honest answers</p><h1>Short answers. No promises.</h1><p className="muted">If the answer is no, it says no.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              {FAQ.map((f) => (<div key={f.q} className="kv"><span>{f.q}</span><b>{f.a}</b></div>))}
+              <div className="row"><button className="pill" onClick={() => go('ai-guide')}>Ask the guide</button><button className="pill" onClick={() => go('safety')}>Safety &amp; support</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'canvas' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Business Model Canvas</p><h1>The nine blocks must fit, or the price is wrong.</h1><p className="muted">After Osterwalder &amp; Pigneur, Business Model Generation (2010) / Strategyzer. The canvas is a set of testable assumptions, not a poster.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              {CANVAS.map((b) => (<div key={b.block} style={{ marginBottom: 12 }}><h3>{b.block}</h3><p className="muted">{b.text}</p></div>))}
+              <p className="muted">{CANVAS_TEST}</p>
+              <p className="small muted">Scheme — how to use the canvas: pin it, date it, and rewrite any block the moment a pilot contradicts it. A canvas that never changes is decoration. Central tension: a premium, hands-on service cannot be priced as if it were automated software.</p>
+              <div className="row"><button className="pill" onClick={() => go('models')}>The five scholarly models</button><button className="pill" onClick={() => go('pricing')}>Pricing &amp; unit economics</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'models' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">The five scholarly models</p><h1>Five models, one operating system for Nexus.</h1><p className="muted">Each model answers a different question, comes from peer-reviewed or canonical scholarly work, and ends with a decision rule and a metric — so it changes behaviour, not just vocabulary. Together: Canvas → Lean → Platform → Positioning → Jobs/Traction/Flywheel.</p></div>
+            {MODELS.map((m) => (
+              <div key={m.n} className="card" style={{ marginTop: 14 }}>
+                <p className="eyebrow">Model {m.n}</p>
+                <h2>{m.name}</h2>
+                <p className="small muted">{m.scholars}</p>
+                <p><strong>Question:</strong> {m.question}</p>
+                <p className="muted">{m.application}</p>
+                <div className="kv"><span>Decision rule</span><b>{m.rule}</b></div>
+                <div className="kv"><span>Metric</span><b>{m.metric}</b></div>
+              </div>
+            ))}
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Supporting lens</h2>
+              <p className="muted">Silbiger, The Ten-Day MBA — assign one owner + one dashboard across marketing, operations, finance, accounting, and strategy. Books inform decisions; they never replace cash reconciliation, legal advice, or security testing.</p>
+              <div className="row"><button className="pill" onClick={() => go('canvas')}>Business Model Canvas</button><button className="pill" onClick={() => go('operations')}>Operations</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'pricing' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Pricing &amp; unit economics</p><h1>Free pilot, 750 Studio, 2,000 Growth — sold only when ready.</h1><p className="muted">Prices are chosen business terms. Nothing GATED may be sold as included until delivery is proven. Payment by invoice only, after written confirmation and readiness checks. No checkout here.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <div className="table-wrap"><table><thead><tr><th>Package</th><th>Price</th><th>Duration</th><th>Includes — only if tagged ready</th><th>Tag</th></tr></thead><tbody>
+                {PRICING_ROWS.map((r) => (<tr key={r.pkg}><td><strong>{r.pkg}</strong></td><td>{r.price}</td><td>{r.duration}</td><td>{r.includes}</td><td><span className={`tag ${r.tag === 'GATED' ? 'gated' : 'ok'}`}>{r.tag}</span></td></tr>))}
+              </tbody></table></div>
+              <p className="muted">Currency: USDC on Solana — verify the actual mint + network; a ticker alone is insufficient. Sponsored rewards are always invoiced separately.</p>
+              <h2>Refund policy</h2>
+              <div className="kv"><span>Before start</span><b>Full refund</b></div>
+              <div className="kv"><span>Within the first 3 days</span><b>50%</b></div>
+              <div className="kv"><span>After day 3</span><b>None, unless Nexus fails to deliver what was promised</b></div>
+              <div className="kv"><span>Unused rewards</span><b>Always returned</b></div>
+              <p className="muted">This policy covers hosting fees only. It does not refund practice coins put into the launch — the contract has no contribution-refund instruction.</p>
+              <h2>Not yet defined — do not invent</h2>
+              <p className="muted">Before any payment, these must be in the signed scope:</p>
+              <ul>{PREPAYMENT_BLOCKERS.map((b) => <li key={b}>{b}</li>)}</ul>
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Unit economics (example)</h2>
+              <div className="kv"><span>Studio</span><b>750 − 150 variable = 600 contribution, 80% margin</b></div>
+              <div className="kv"><span>Growth</span><b>2,000 − 500 variable = 1,500 contribution, 75% margin — the 500 variable cost is a v2.0 planning assumption, not a v1 figure; validate from time records in the first paid campaigns</b></div>
+              <div className="kv"><span>Break-even</span><b>5 campaigns at 3,000 USDC fixed overhead; 6 with 100 USDC CAC per campaign (contribution falls to 500)</b></div>
+              <p className="small muted">Contribution is not net profit. Replace every assumption with real invoices before quoting this.</p>
+              <h2>Scenarios — illustrative only, not forecasts</h2>
+              <div className="table-wrap"><table><thead><tr><th>Scenario</th><th>Paid campaigns / month</th><th>Mix</th><th>Fees</th><th>Contribution</th><th>What it proves</th></tr></thead><tbody>
+                {SCENARIOS.map((sc) => (<tr key={sc.name}><td><strong>{sc.name}</strong></td><td>{sc.campaigns}</td><td>{sc.mix}</td><td>{sc.fees}</td><td>{sc.contribution}</td><td>{sc.proves}</td></tr>))}
+              </tbody></table></div>
+              <p className="small muted">Assumes Studio variable cost 150 USDC (80% margin) and Growth variable cost 500 USDC (75% margin — more manual service), before CAC, fixed overhead, tax, and refunds.</p>
+              <h2>Finance controls</h2>
+              <p className="muted">Invoice IDs, verified receipts (not screenshots), campaign-linked expenses, approval trail, separate reward ledger (received / paid / unused / returned), runway + CAC + refund + concentration tracking. Revenue is recognised when earned per the agreement, not when invoiced.</p>
+              <div className="row"><button className="pill" onClick={() => go('refund-center')}>Refund center</button><button className="pill" onClick={() => go('operations')}>Operations</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'operations' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Operations</p><h1>Plan in scenarios. Operate on checklists. Hire for the workload that exists.</h1><p className="muted">Campaign delivery, team and decision rights, growth experiments — from v2.0 pp. 15–16.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Campaign delivery — before / during / close</h2>
+              {DELIVERY_CHECKLISTS.map((d) => (<div key={d.phase} style={{ marginBottom: 12 }}><h3>{d.phase}</h3><ul>{d.items.map((i) => <li key={i}>{i}</li>)}</ul></div>))}
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Team &amp; decision rights</h2>
+              <p className="muted"><strong>Confirmed:</strong> Abasiofon Joseph Bassey, Founder &amp; CEO. All other roles below are <strong>open functions, not named hires</strong>. No staffed department, legal entity, auditor, or board is claimed.</p>
+              <div className="table-wrap"><table><thead><tr><th>Function</th><th>Owns</th><th>Signs off</th></tr></thead><tbody>
+                {TEAM.map((t) => (<tr key={t.fn}><td><strong>{t.fn}</strong></td><td>{t.owns}</td><td>{t.signs}</td></tr>))}
+              </tbody></table></div>
+              <p className="muted"><strong>Separation of duties:</strong> different people should request, approve, and reconcile significant payments/releases. Until the team can, use written checklists, independent review, and a complete audit trail.</p>
+              <p className="muted"><strong>Rhythm (RECOMMENDED):</strong> Weekly — delivery, incidents, cash obligations, experiments. Monthly — margins, renewals, capacity, risks, canvas review. Before every release — source, tests, deployment config.</p>
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Growth experiments — Bullseye discipline</h2>
+              <div className="table-wrap"><table><thead><tr><th>Experiment</th><th>Hypothesis</th><th>Qualified outcome</th><th>Budget rule</th></tr></thead><tbody>
+                {BULLSEYE.map((b) => (<tr key={b.experiment}><td><strong>{b.experiment}</strong></td><td>{b.hypothesis}</td><td>{b.outcome}</td><td>{b.budget}</td></tr>))}
+              </tbody></table></div>
+              <p className="muted"><strong>First cohort (RECOMMENDED):</strong> five suitable studios, unpaid devnet pilots. <strong>Validation gates, not customer counts:</strong> 3 of 5 pilots state willingness to pay in writing; 2 repeat paid campaigns.</p>
+              <h2>Pirates — engagement with guardrails</h2>
+              <ul>{PIRATES_RULES.map((r) => <li key={r}>{r}</li>)}</ul>
+              <p className="small muted">After Xi, Al-Msallam &amp; Hamari (2023), on unethical gamification. The Shards currency and its store were removed from this app — device-local points only, never tokens, never financial rewards.</p>
+              <div className="row"><button className="pill" onClick={() => go('pirates')}>Pirates</button><button className="pill" onClick={() => go('gates')}>Gates, risk &amp; checklists</button></div>
+            </div>
+          </section>
+        )}
+
+        {page === 'gates' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Gates, risk &amp; checklists</p><h1>No gate, no launch. No evidence, no claim.</h1><p className="muted">Gates 1–5 with pass/kill criteria (v2.0 p. 17), the risk register, both checklists, and the SOPs.</p></div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Gates 1–5</h2>
+              {GATES.map((g) => (
+                <div key={g.n} style={{ marginBottom: 14 }}>
+                  <h3>Gate {g.n} · {g.title} — <span className={`tag ${g.status === 'in-progress' ? 'warn' : 'gated'}`}>{g.statusText}</span></h3>
+                  <p className="small muted">Pass requires: {g.pass}</p>
+                  <p className="small muted">Kill / hold if: {g.kill}</p>
+                </div>
+              ))}
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Risk register — plainly stated</h2>
+              {RISK_REGISTER.map((r) => (<div key={r.group} style={{ marginBottom: 12 }}><h3>{r.group}</h3><ul>{r.risks.map((x) => <li key={x}>{x}</li>)}</ul></div>))}
+              <p className="muted"><strong>What Nexus will never do:</strong> ask for a seed phrase. Mark success from a browser alone. Show invented numbers, fake odds, or guaranteed profits. Let an animation imply a prize. Activate real-money features without a separate explicit decision + independent review.</p>
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Technical launch checklist</h2>
+              <ul>{TECH_CHECKLIST.map((c) => <li key={c}>{c}</li>)}</ul>
+              <h2>Commercial campaign checklist</h2>
+              <ul>{COMM_CHECKLIST.map((c) => <li key={c}>{c}</li>)}</ul>
+              <p className="muted"><strong>Any unchecked item is a blocker.</strong></p>
+            </div>
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>SOPs — standard operating procedures</h2>
+              {SOPS.map((s) => (<div key={s.title} style={{ marginBottom: 12 }}><h3>{s.title}</h3><ul>{s.steps.map((x) => <li key={x}>{x}</li>)}</ul></div>))}
+              <p className="small muted">Three calculations to remember: Allocation = wallet gross / final gross total × 400M. Claimable = vested − previously gross-claimed. Contribution margin = hosting fee − variable delivery cost (not net profit).</p>
+              <div className="row"><button className="pill" onClick={() => go('mainnet')}>Mainnet readiness</button><button className="pill" onClick={() => go('launch-controls')}>Launch controls</button></div>
             </div>
           </section>
         )}
@@ -1301,7 +1575,7 @@ export default function App() {
           <section>
             <div className="page-head"><p className="eyebrow">Prototype scenarios</p><h1>Every page. Every dialog.</h1><p className="muted">The full prototype index — tap any row to open that page or dialog. One responsive codebase, not three copies.</p></div>
             <div className="card" style={{ marginTop: 14 }}>
-              <h2>All 40 pages</h2>
+              <h2>All {PAGES.filter((p) => p.id !== 'home' && p.id !== 'builders').length} pages</h2>
               <div className="table-wrap"><table className="scenario-table"><thead><tr><th>Page</th><th>Group</th><th>What it is</th><th></th></tr></thead><tbody>
                 {PAGES.filter((p) => p.id !== 'home' && p.id !== 'builders').map((p) => (<tr key={p.id}><td>{p.title}</td><td>{p.group}</td><td className="muted">{p.blurb}</td><td><button className="pill" onClick={() => go(p.id)}>Open →</button></td></tr>))}
               </tbody></table></div>
@@ -1348,6 +1622,9 @@ export default function App() {
             <button className="linklike" onClick={() => go('journeys')}>Journeys</button>
             <button className="linklike" onClick={() => go('scenarios')}>All pages</button>
             <button className="linklike" onClick={() => go('builders')}>For builders &amp; studios</button>
+            <button className="linklike" onClick={() => go('mainnet')}>Mainnet readiness</button>
+            <button className="linklike" onClick={() => go('token')}>Token</button>
+            <button className="linklike" onClick={() => go('faq')}>FAQ</button>
           </div>
           NEXUS / A little curiosity. A new adventure.<br />
           Nexus — practice only, no real money, no guaranteed returns.<br />
