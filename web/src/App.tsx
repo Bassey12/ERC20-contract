@@ -16,7 +16,12 @@ import type { Campaign, Crew, Place } from './lib/data'
 // inside stroke #DEC9B4, radius 24px, cards 24px padding / 20px gap,
 // dialogs 640px / 32px padding / 28px gap. Grandstander ExtraBold
 // headings, plain sans body. Shared header + transparency banner on
-// every page. Player pill nav + Studio pill nav.
+// every page. Simple main nav (Home · Join · Vault · Earn · Pirates
+// · Help); all technical/business v2.0 pages live behind one
+// "Learn more" hub (footer + Help), never in the main nav. Plain
+// words on main screens — no PDA/Merkle/escrow/SPL/Anchor/vesting/
+// mint unless the user taps "Learn more". Pirates has a Create a
+// Crew section at the top (free, no wallet) + join by invite code.
 // Canonical tiers (tablet design + v2.0 maths — NOT the desktop
 // ORIGIN/PULSE/APEX pricing): Airdrop free preview · Retail ≤2 SOL
 // fully claimable · Whale >2 SOL, 72h release, 25/15/5/0% penalty,
@@ -36,7 +41,7 @@ export type PageId =
   | 'referral-account' | 'connected-vault' | 'crew-progress' | 'transaction-detail'
   | 'claim-review' | 'airdrop-eligibility' | 'capsule-opening' | 'wallet'
   | 'capsule-review' | 'capsule-guide' | 'share' | 'activity' | 'rankings'
-  | 'pirates' | 'earn' | 'vault' | 'capsules' | 'builders'
+  | 'pirates' | 'earn' | 'vault' | 'capsules' | 'builders' | 'learn'
   | 'mainnet' | 'token' | 'flows' | 'canvas' | 'models' | 'pricing'
   | 'evidence' | 'wallet-safety' | 'operations' | 'gates' | 'faq'
 
@@ -80,20 +85,21 @@ export const PAGES: { id: PageId; title: string; group: string; blurb: string }[
   { id: 'refund-center', title: 'Refund center', group: 'Studio', blurb: 'Ask for a refund, see the calculation, track the decision.' },
   { id: 'business', title: 'Business', group: 'Studio', blurb: 'Packages, scope, readiness and the operating model.' },
   { id: 'business-model', title: 'Business model', group: 'Studio', blurb: 'The canvas, the unit economics, the roadmap.' },
-  { id: 'mainnet', title: 'Network & mainnet readiness', group: 'Help', blurb: 'Target: Solana mainnet-beta. Current: devnet. Gates 1–5, honestly marked.' },
-  { id: 'token', title: 'Token economics', group: 'Player', blurb: '1B mint cap, the buckets, vesting worked examples, corrected C.6.' },
-  { id: 'flows', title: 'Referrals & money flows', group: 'Player', blurb: '10/2/88, the fairness rules, and three money flows never mixed.' },
-  { id: 'evidence', title: 'Evidence classes', group: 'Player', blurb: 'Sessions are not people. Test SOL is never revenue.' },
-  { id: 'wallet-safety', title: 'Wallet safety', group: 'Help', blurb: 'The 5 checks. Nexus never asks for a seed phrase or private key. Ever.' },
-  { id: 'faq', title: 'FAQ — honest answers', group: 'Help', blurb: 'Short answers, no promises. Is Nexus using real money now? No.' },
-  { id: 'canvas', title: 'Business Model Canvas', group: 'Business', blurb: 'The nine blocks, after Osterwalder & Pigneur.' },
-  { id: 'models', title: 'The five scholarly models', group: 'Business', blurb: 'Canvas → Lean → Platform → Positioning → Jobs/Traction/Flywheel.' },
-  { id: 'pricing', title: 'Pricing & unit economics', group: 'Business', blurb: 'Free pilot, 750 Studio, 2,000 Growth — and what each one earns.' },
-  { id: 'operations', title: 'Operations', group: 'Business', blurb: 'Delivery checklists, team, rhythms, Bullseye experiments.' },
-  { id: 'gates', title: 'Gates, risk & checklists', group: 'Business', blurb: 'Gates 1–5 pass/kill criteria, risk register, SOPs.' },
+  { id: 'mainnet', title: 'Network & mainnet readiness', group: 'Learn more', blurb: 'Target: Solana mainnet-beta. Current: devnet. Gates 1–5, honestly marked.' },
+  { id: 'token', title: 'Token economics', group: 'Learn more', blurb: '1B mint cap, the buckets, vesting worked examples, corrected C.6.' },
+  { id: 'flows', title: 'Referrals & money flows', group: 'Learn more', blurb: '10/2/88, the fairness rules, and three money flows never mixed.' },
+  { id: 'evidence', title: 'Evidence classes', group: 'Learn more', blurb: 'Sessions are not people. Test SOL is never revenue.' },
+  { id: 'wallet-safety', title: 'Wallet safety', group: 'Learn more', blurb: 'The 5 checks. Nexus never asks for a seed phrase or private key. Ever.' },
+  { id: 'faq', title: 'FAQ — honest answers', group: 'Learn more', blurb: 'Short answers, no promises. Is Nexus using real money now? No.' },
+  { id: 'canvas', title: 'Business Model Canvas', group: 'Learn more', blurb: 'The nine blocks, after Osterwalder & Pigneur.' },
+  { id: 'models', title: 'The five scholarly models', group: 'Learn more', blurb: 'Canvas → Lean → Platform → Positioning → Jobs/Traction/Flywheel.' },
+  { id: 'pricing', title: 'Pricing & unit economics', group: 'Learn more', blurb: 'Free pilot, 750 Studio, 2,000 Growth — and what each one earns.' },
+  { id: 'operations', title: 'Operations', group: 'Learn more', blurb: 'Delivery checklists, team, rhythms, Bullseye experiments.' },
+  { id: 'gates', title: 'Gates, risk & checklists', group: 'Learn more', blurb: 'Gates 1–5 pass/kill criteria, risk register, SOPs.' },
   { id: 'scenarios', title: 'Prototype scenarios', group: 'Index', blurb: 'Every page and every dialog, in one place.' },
   { id: 'journeys', title: 'Journey directory', group: 'Index', blurb: 'Eight journeys through the whole prototype.' },
   { id: 'builders', title: 'For builders & studios', group: 'Studio', blurb: 'Contract, gates and the 14 worked-example checks.' },
+  { id: 'learn', title: 'Learn more — the full document', group: 'Learn more', blurb: 'The money rules, the business plan, the launch checklist. Here when you want it, out of the way when you do not.' },
 ]
 
 export const PAGE_BY_ID: Record<string, (typeof PAGES)[number]> = Object.fromEntries(PAGES.map((p) => [p.id, p]))
@@ -106,8 +112,8 @@ export const JOURNEYS: Journey[] = [
     { label: 'Capsules', page: 'capsules' }, { label: 'Capsule review', page: 'capsule-review' }, { label: 'Capsule opening', page: 'capsule-opening' }, { label: 'Invalid contribution', dialog: 'invalid-contribution' }, { label: 'Crossing whale threshold', dialog: 'crossing-whale' }, { label: 'Review deposit recipients', dialog: 'review-recipients' }, { label: 'Awaiting wallet approval', dialog: 'awaiting-approval' }, { label: 'Deposit submitted', dialog: 'deposit-submitted' }, { label: 'Deposit confirmed', dialog: 'deposit-confirmed' }, { label: 'Deposit finalized', dialog: 'deposit-finalized' }, { label: 'Request declined', dialog: 'request-declined' }, { label: 'Transaction failed', dialog: 'tx-failed' }, { label: 'Transaction unknown', dialog: 'tx-unknown' }, { label: 'Insufficient test SOL', dialog: 'insufficient-sol' }, { label: 'Hardcap exceeded', dialog: 'hardcap' }, { label: 'Sale closed', dialog: 'sale-closed' } ] },
   { id: 'j3', title: '3 · Airdrop & claims', blurb: 'Check the list, register, claim — retail, whale and airdrop, each with its own review.', steps: [
     { label: 'Airdrop eligibility', page: 'airdrop-eligibility' }, { label: 'Checking eligibility', dialog: 'checking-eligibility' }, { label: 'Eligible allocation', dialog: 'eligible-allocation' }, { label: 'Missing eligibility proof', dialog: 'missing-proof' }, { label: 'Invalid Merkle proof', dialog: 'invalid-proof' }, { label: 'Already registered', dialog: 'already-registered' }, { label: 'Review airdrop registration', dialog: 'review-registration' }, { label: 'Registration finalized', dialog: 'registration-finalized' }, { label: 'Retail claim review', dialog: 'retail-claim-review' }, { label: 'Whale claim review', dialog: 'whale-claim-review' }, { label: 'Airdrop claim review', dialog: 'airdrop-claim-review' }, { label: 'Confirm early penalty', dialog: 'confirm-penalty' }, { label: 'Nothing vested yet', dialog: 'nothing-vested' }, { label: 'Claim finalized', dialog: 'claim-finalized' }, { label: 'Allocation fully claimed', dialog: 'allocation-claimed' } ] },
-  { id: 'j4', title: '4 · Crew, referrals & sharing', blurb: 'Join a crew, invite a friend, share the link — and leave when you want.', steps: [
-    { label: 'Pirates', page: 'pirates' }, { label: 'Join crew', dialog: 'join-crew' }, { label: 'Crew progress', page: 'crew-progress' }, { label: 'Crew standings', page: 'crew-standings' }, { label: 'Leave crew', dialog: 'leave-crew' }, { label: 'Reset local progress', dialog: 'reset-progress' }, { label: 'Earn', page: 'earn' }, { label: 'Referral account', page: 'referral-account' }, { label: 'Share', page: 'share' }, { label: 'Share adventure', dialog: 'share-adventure' } ] },
+  { id: 'j4', title: '4 · Crew, referrals & sharing', blurb: 'Start your own crew, join a crew, invite a friend, share the link — and leave when you want.', steps: [
+    { label: 'Pirates', page: 'pirates' }, { label: 'Start your own crew', page: 'pirates' }, { label: 'Join with a code', page: 'pirates' }, { label: 'Join crew', dialog: 'join-crew' }, { label: 'Crew progress', page: 'crew-progress' }, { label: 'Crew standings', page: 'crew-standings' }, { label: 'Leave crew', dialog: 'leave-crew' }, { label: 'Reset local progress', dialog: 'reset-progress' }, { label: 'Earn', page: 'earn' }, { label: 'Referral account', page: 'referral-account' }, { label: 'Share', page: 'share' }, { label: 'Share adventure', dialog: 'share-adventure' } ] },
   { id: 'j5', title: '5 · Studio & campaign lifecycle', blurb: 'Sign in, draft, publish, launch, report, refund — the whole campaign life.', steps: [
     { label: 'Studio sign-in', page: 'studio-signin' }, { label: 'Sign-in email sent', dialog: 'signin-sent' }, { label: 'Sign-in link expired', dialog: 'signin-expired' }, { label: 'Campaigns', page: 'campaigns' }, { label: 'Campaign editor', page: 'campaign-editor' }, { label: 'Draft saved', dialog: 'draft-saved' }, { label: 'Discard unsaved changes', dialog: 'discard-changes' }, { label: 'Delete draft campaign', dialog: 'delete-draft' }, { label: 'Campaign dashboard', page: 'campaign-dashboard' }, { label: 'Review campaign publication', dialog: 'review-publication' }, { label: 'Publication blocked', dialog: 'publication-blocked' }, { label: 'Campaign published', dialog: 'campaign-published' }, { label: 'Campaign live', page: 'campaign-live' }, { label: 'Launch controls', page: 'launch-controls' }, { label: 'Campaign completed', page: 'campaign-completed' }, { label: 'Campaign cancelled', page: 'campaign-cancelled' }, { label: 'Cancel campaign', dialog: 'cancel-campaign' }, { label: 'Campaign report', page: 'campaign-report' }, { label: 'Export campaign report', dialog: 'export-report' }, { label: 'Report data gap', dialog: 'report-gap' }, { label: 'Refund center', page: 'refund-center' }, { label: 'Review refund calculation', dialog: 'review-refund-calc' }, { label: 'Refund request received', dialog: 'refund-received' } ] },
   { id: 'j6', title: '6 · Authority & release', blurb: 'Launch steps are authority steps — gates are separate from wallet approval.', steps: [
@@ -123,6 +129,14 @@ interface Deposit {
   direct: number; upline: number; vault: number; referrer: string
   isAirdrop?: boolean; airdropAllocation?: number
 }
+/** A crew the player creates themselves. Free, no wallet, seconds to make.
+ *  Points are device-local game points — just for fun, not tokens, not money. */
+interface MyCrew {
+  id: string; name: string; colour: string; flag: string; about: string
+  code: string; points: number; members: string[]; challenge: string
+}
+const CREW_COLOURS = ['#ffb38a', '#f7a8c4', '#b79ced', '#7cc4e8', '#ffd166', '#a8e6a1']
+const CREW_FLAGS = ['🏴‍☠️', '⚓', '🌊', '☀️', '🐋', '⭐']
 function fakeAddress() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz123456789'
   let s = ''
@@ -195,6 +209,17 @@ export default function App() {
   const [opens, setOpens] = useState<Record<string, number>>({})
   const [crews, setCrews] = useState<Crew[]>(CREWS)
   const [joined, setJoined] = useState<string[]>([])
+  // Create a Crew — free, no wallet. One crew per player in this demo.
+  const [myCrew, setMyCrew] = useState<MyCrew | null>(null)
+  const [crewName, setCrewName] = useState('')
+  const [crewColour, setCrewColour] = useState(CREW_COLOURS[0])
+  const [crewFlag, setCrewFlag] = useState(CREW_FLAGS[0])
+  const [crewAbout, setCrewAbout] = useState('')
+  const [joinCode, setJoinCode] = useState('')
+  const [joinMsg, setJoinMsg] = useState('')
+  const [crewCopied, setCrewCopied] = useState(false)
+  const [editingCrew, setEditingCrew] = useState(false)
+  const [confirmDisband, setConfirmDisband] = useState(false)
   const [campaigns, setCampaigns] = useState<Campaign[]>(DEMO_CAMPAIGNS)
   const [newStudio, setNewStudio] = useState('')
   const [newCampaign, setNewCampaign] = useState('')
@@ -334,6 +359,50 @@ export default function App() {
     setCopied(true); showToast('Link copied')
     logActivity('Copied the invite link.')
   }
+  const crewCodeFor = (name: string) => `CREW-${name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '') || 'CREW'}-${Math.floor(1000 + Math.random() * 9000)}`
+  function createCrew() {
+    if (!crewName.trim()) { setNotice('Give your crew a name first.'); return }
+    const code = crewCodeFor(crewName)
+    const crew: MyCrew = { id: 'mine', name: crewName.trim(), colour: crewColour, flag: crewFlag, about: crewAbout.trim(), code, points: 0, members: ['You'], challenge: 'Open 3 capsules and leave one piece of feedback' }
+    setMyCrew(crew)
+    setCrews((cs) => [...cs.filter((c) => c.id !== 'mine'), { id: 'mine', name: crew.name, members: 1, points: 0, challenge: crew.challenge }])
+    setJoined((j) => [...j.filter((x) => x !== 'mine'), 'mine'])
+    setEditingCrew(false)
+    setNotice(`Your crew “${crew.name}” is ready — invite your friends with code ${code}.`)
+    logActivity(`Created your crew “${crew.name}” (${code}).`)
+  }
+  function copyCrewInvite() {
+    if (!myCrew) return
+    const link = `https://nexus.example/crew/${myCrew.code}`
+    if (navigator.clipboard) navigator.clipboard.writeText(link).catch(() => undefined)
+    setCrewCopied(true); showToast('Crew invite copied')
+    logActivity(`Copied the invite link for crew “${myCrew.name}”.`)
+  }
+  function completeCrewChallenge(id: string) {
+    setCrews((cs) => cs.map((x) => x.id === id ? { ...x, points: x.points + 50 } : x))
+    if (id === 'mine') setMyCrew((m) => m ? { ...m, points: m.points + 50 } : m)
+    logActivity('Completed a crew challenge · +50 points.')
+  }
+  function joinByCode() {
+    const code = joinCode.trim().toUpperCase()
+    if (!code) { setJoinMsg('Type a crew code first — it looks like CREW-SUNSET-1234.'); return }
+    const seeded: Record<string, string> = { 'CREW-TRENCH-1234': 'trench', 'CREW-VAULT-1234': 'vault', 'CREW-REEF-1234': 'reef' }
+    const target = myCrew && code === myCrew.code ? 'mine' : seeded[code]
+    if (!target) { setJoinMsg('We could not find a crew with that code. Check the letters and try again.'); return }
+    if (target === 'mine') { setJoinMsg('That is your own crew — you are already the captain.'); return }
+    if (joined.includes(target)) { setJoinMsg('You are already in that crew.'); return }
+    setJoined((j) => [...j, target]); setJoinMsg('')
+    setNotice(`Welcome aboard — you joined ${crews.find((c) => c.id === target)?.name || 'the crew'}!`)
+    logActivity(`Joined a crew with code ${code}.`)
+  }
+  function disbandCrew() {
+    if (!myCrew) return
+    setCrews((cs) => cs.filter((c) => c.id !== 'mine'))
+    setJoined((j) => j.filter((x) => x !== 'mine'))
+    setNotice(`Crew “${myCrew.name}” is gone. You can start a new one any time.`)
+    logActivity(`Disbanded crew “${myCrew.name}”.`)
+    setMyCrew(null); setConfirmDisband(false); setCrewName(''); setCrewAbout('')
+  }
   function createCampaign() {
     if (!newStudio.trim() || !newCampaign.trim()) { setNotice('Enter a studio name and a campaign name.'); return }
     setCampaigns((c) => [...c, { id: `c${Date.now()}`, studio: newStudio.trim(), name: newCampaign.trim(), pkg: newPkg, sessions: 0, wallets: 0, contributors: 0, testSol: 0, status: 'Draft — simulated, not live' }])
@@ -352,6 +421,7 @@ export default function App() {
   function resetProgress() {
     setDeposits([]); setClaimedByVault({}); setFinalized(false); setLaunched(false); setElapsedHours(0)
     setBurned(0); setEscrow(0); setOpened({}); setOpens({}); setJoined([])
+    setCrews(CREWS); setMyCrew(null); setCrewName(''); setCrewAbout(''); setJoinCode(''); setJoinMsg(''); setEditingCrew(false); setConfirmDisband(false)
     setAirdropResult('idle'); setActivityLog(['Started over — fresh demo.'])
     setDialogId(null); setNotice('Started over. Everything in the demo is fresh.'); go('capsules')
   }
@@ -361,7 +431,7 @@ export default function App() {
   }
   function stepInside(p: Place) {
     setSelectedPlace(null)
-    if (p.go === 'builders') { go('builders'); return }
+    if (p.go === 'builders') { go('learn'); return }
     if (p.go === 'store') { go('earn'); return }
     go(p.go === 'play' ? 'capsules' : p.go === 'vaults' ? 'vault' : p.go === 'invite' ? 'earn' : 'ai-guide')
   }
@@ -400,14 +470,16 @@ export default function App() {
   const managedRatio = managed ? ratioForDeposit(managed) : 0
   const char = CAPSULES[charIndex]
   const dialog: DialogDef | null = dialogId ? DIALOG_BY_ID[dialogId] || null : null
+  // Simple main nav — Home, Join, Vault, Earn, Pirates, Help.
+  // Everything technical lives behind one "Learn more" link (footer + Help).
   const playerNav: { id: PageId; label: string }[] = [
-    { id: 'capsules', label: 'Capsules' }, { id: 'vault', label: 'Vault' }, { id: 'earn', label: 'Earn' },
-    { id: 'pirates', label: 'Pirates' }, { id: 'rankings', label: 'Rankings' }, { id: 'activity', label: 'Activity' },
+    { id: 'home', label: 'Home' }, { id: 'capsules', label: 'Join' }, { id: 'vault', label: 'Vault' },
+    { id: 'earn', label: 'Earn' }, { id: 'pirates', label: 'Pirates' }, { id: 'ai-guide', label: 'Help' },
   ]
   const studioNav: { id: PageId; label: string }[] = [
     { id: 'campaigns', label: 'Campaigns' }, { id: 'share', label: 'Share' }, { id: 'launch-controls', label: 'Launch controls' }, { id: 'business', label: 'Business' },
   ]
-  const isStudioPage = ['campaigns', 'campaign-editor', 'campaign-dashboard', 'campaign-management', 'campaign-report', 'campaign-live', 'campaign-completed', 'campaign-cancelled', 'public-campaign', 'studio-signin', 'launch-controls', 'refund-center', 'business', 'business-model', 'builders', 'canvas', 'models', 'pricing', 'operations', 'gates', 'mainnet', 'token', 'flows', 'evidence'].includes(page)
+  const isStudioPage = ['campaigns', 'campaign-editor', 'campaign-dashboard', 'campaign-management', 'campaign-report', 'campaign-live', 'campaign-completed', 'campaign-cancelled', 'public-campaign', 'studio-signin', 'launch-controls', 'refund-center', 'business', 'business-model', 'builders'].includes(page)
   const capsuleTier = (id: string) => (id === 'free' ? 'green' : id === 'retail' ? 'orange' : 'purple') as 'green' | 'orange' | 'purple'
 
   const pageMeta = PAGE_BY_ID[page]
@@ -429,7 +501,7 @@ export default function App() {
       </div></header>
       <div className="transparency-banner"><div className="transparency-banner-inner">
         <span><strong>TEST WORLD, REAL TRANSPARENCY.</strong> Test SOL has no cash value. Deposits and claims are gated pending deployment approval.</span>
-        <button onClick={() => go('launch-controls')}>View readiness →</button>
+        <button onClick={() => go('learn')}>Learn more →</button>
       </div></div>
 
       <main className="wrap">
@@ -438,8 +510,6 @@ export default function App() {
           {(isStudioPage ? studioNav : playerNav).map((n) => (
             <button key={n.id} className={`pill${page === n.id ? ' active' : ''}`} onClick={() => go(n.id)}>{n.label}</button>
           ))}
-          <button className="pill" onClick={() => go('journeys')}>Journeys</button>
-          <button className="pill" onClick={() => go('scenarios')}>All pages</button>
         </nav>
         {notice && <div className="notice info fade-up" style={{ marginTop: 14 }} role="status">{notice}</div>}
 
@@ -462,7 +532,7 @@ export default function App() {
               <p className="muted">Three ways in. Clear rules all the way.</p>
               <div className="grid cols-2" style={{ marginTop: 12 }}>
                 <div className="capsule-tile tier-green"><CapsuleArt tier="green" label="Tier 01 Airdrop — the curious one, free capsule" /><div><h3>Tier 01 · Airdrop — “The curious one”</h3><p className="muted">Free capsule, free preview. Get a feel for the world. A preview does not award tokens or establish airdrop eligibility.</p><button className="btn small" onClick={() => { openCapsule('free'); go('capsule-opening') }}>Try the free preview</button></div></div>
-                <div className="capsule-tile tier-orange"><CapsuleArt tier="orange" label="Tier 02 Retail — the explorer, up to 2 test SOL" /><div><h3>Tier 02 · Retail — “The explorer”</h3><p className="muted">Up to 2 test SOL in total. Fully claimable after finalization and launch activation.</p><button className="btn small" onClick={() => { setSelectedCapsule('retail'); go('capsule-review') }}>Join as Retail</button></div></div>
+                <div className="capsule-tile tier-orange"><CapsuleArt tier="orange" label="Tier 02 Retail — the explorer, up to 2 test SOL" /><div><h3>Tier 02 · Retail — “The explorer”</h3><p className="muted">Up to 2 test SOL in total. Ready in full once the launch starts.</p><button className="btn small" onClick={() => { setSelectedCapsule('retail'); go('capsule-review') }}>Join as Retail</button></div></div>
                 <div className="capsule-tile tier-purple"><CapsuleArt tier="purple" label="Tier 03 Whale — the deep diver, above 2 test SOL" /><div><h3>Tier 03 · Whale — “The deep diver”</h3><p className="muted">Above 2 test SOL. 72-hour release, with an early cost: 25% in day 1, 15% in day 2, 5% in day 3, nothing after. Most of the cost disappears forever; a small part goes to the rewards pot.</p><button className="btn small" onClick={() => { setSelectedCapsule('whale'); go('capsule-review') }}>Join as Whale</button></div></div>
                 <div className="capsule-tile"><div style={{ fontSize: '3rem' }} aria-hidden="true">🏴‍☠️</div><div><h3>Find your crew</h3><p className="muted">Pirates are crews with challenges and points. A game — not money, not tokens.</p><button className="btn small" onClick={() => go('pirates')}>Meet the crews</button></div></div>
               </div>
@@ -623,7 +693,7 @@ export default function App() {
                   <p className="small muted">{launched ? `${elapsedHours} hours have passed of 3 days.` : 'The 3-day clock has not started yet.'}</p>
                   <div className="field"><label>Move the clock — see what you could take (hours: {elapsedHours})</label><input type="range" min="0" max="72" value={elapsedHours} disabled={!launched} onChange={(e) => setElapsedHours(Number(e.target.value))} /></div>
                   <div className="row"><button className="pill" onClick={() => setElapsedHours((h) => Math.min(72, h + 12))} disabled={!launched}>+12 hours</button><button className="pill" onClick={() => setElapsedHours(72)} disabled={!launched}>Jump to 3 days</button></div>
-                  <p className="small muted">This slider is a calculator, not a time machine. The network clock governs — moving the slider changes nothing on-chain. Claimable = vested − already taken, never below zero.</p>
+                  <p className="small muted">This slider is just a preview. Moving it changes nothing. What you can take is what has unlocked so far, minus what you already took.</p>
                   <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch', marginTop: 12 }}>
                     <button className="btn ghost" onClick={() => { setFinalized(true); setDialogId('deposit-finalized'); logActivity('Sale finalised — shares fixed.') }} disabled={finalized || deposits.length === 0}>1 · Close the sale</button>
                     <button className="btn ghost" onClick={() => { setLaunched(true); setNotice('The launch started. The 3-day clock is running.'); logActivity('Launch activated — 72-hour clock started.') }} disabled={!finalized || launched}>2 · Start the launch</button>
@@ -694,7 +764,7 @@ export default function App() {
                     <button className="pill" onClick={() => setDialogId('retail-claim-review')}>Retail claim review</button>
                     <button className="pill" onClick={() => setDialogId('whale-claim-review')}>Whale claim review</button>
                     <button className="pill" onClick={() => setDialogId('airdrop-claim-review')}>Airdrop claim review</button>
-                    <button className="pill" onClick={() => setDialogId(totalClaimable <= 0 ? 'nothing-vested' : 'confirm-penalty')}>Confirm early penalty</button>
+                    <button className="pill" onClick={() => setDialogId(totalClaimable <= 0 ? 'nothing-vested' : 'confirm-penalty')}>Take early — see the cost</button>
                   </div>
                   <p className="small muted">The cost applies only to the amount you take now. Waiting until after 3 days costs nothing.</p>
                 </>
@@ -770,18 +840,74 @@ export default function App() {
 
         {page === 'pirates' && (
           <section>
-            <div className="page-head"><p className="eyebrow">Pirates</p><h1>Crews, challenges and points.</h1><p className="muted">Crews are a game. Points are <strong>not money and not tokens</strong> — they never change your share.</p></div>
-            <div className="grid" style={{ marginTop: 14 }}>
-              {crews.map((c) => (
+            <div className="page-head"><p className="eyebrow">Pirates</p><h1>Crews, challenges and points.</h1><p className="muted">Crews are a game. Points are <strong>just for fun — not tokens, not money</strong>. They never change your share.</p></div>
+
+            {myCrew ? (
+              <div className="card" style={{ marginTop: 14, borderTop: `8px solid ${myCrew.colour}` }}>
+                <span className="tag">Your crew · You are the Captain</span>
+                <h2 style={{ marginTop: 10 }}>{myCrew.flag} {myCrew.name}</h2>
+                {myCrew.about && <p className="muted">{myCrew.about}</p>}
+                <div className="kv"><span>Invite code</span><b>{myCrew.code}</b></div>
+                <div className="kv"><span>Crew points</span><b>{myCrew.points} points — just for fun</b></div>
+                <div className="kv"><span>Challenge</span><b>{myCrew.challenge}</b></div>
+                <h3 style={{ marginTop: 14 }}>Members ({myCrew.members.length})</h3>
+                {myCrew.members.map((m) => (<div key={m} className="kv"><span>👤 {m}</span><b>{m === 'You' ? 'Captain' : 'Member'}</b></div>))}
+                <div className="row" style={{ marginTop: 12 }}>
+                  <button className="btn" style={{ width: 'auto' }} onClick={copyCrewInvite}>{crewCopied ? 'Copied! ✓' : 'Copy invite link'}</button>
+                  <button className="btn small" onClick={() => completeCrewChallenge('mine')}>Complete challenge · +50 points</button>
+                  <button className="pill" onClick={() => { setCrewName(myCrew.name); setCrewColour(myCrew.colour); setCrewFlag(myCrew.flag); setCrewAbout(myCrew.about); setEditingCrew(true) }}>Edit crew</button>
+                  <button className="pill" onClick={() => go('crew-progress')}>See my progress</button>
+                </div>
+                {editingCrew && (
+                  <div style={{ marginTop: 14 }}>
+                    <div className="field"><label>Crew name</label><input value={crewName} onChange={(e) => setCrewName(e.target.value)} maxLength={30} /></div>
+                    <div className="field"><label>Pick a colour</label><div className="row" role="group" aria-label="Crew colour">{CREW_COLOURS.map((col) => (<button key={col} className={`preset${crewColour === col ? ' active' : ''}`} style={{ background: col, width: 44, height: 44, borderRadius: 12 }} onClick={() => setCrewColour(col)} aria-label={`Colour ${col}`}>{crewColour === col ? '✓' : ''}</button>))}</div></div>
+                    <div className="field"><label>Pick a flag</label><div className="row" role="group" aria-label="Crew flag">{CREW_FLAGS.map((f) => (<button key={f} className={`preset${crewFlag === f ? ' active' : ''}`} style={{ fontSize: '1.5rem' }} onClick={() => setCrewFlag(f)} aria-label={`Flag ${f}`}>{f}</button>))}</div></div>
+                    <div className="field"><label>What is your crew about? (one short line)</label><input value={crewAbout} onChange={(e) => setCrewAbout(e.target.value)} maxLength={80} /></div>
+                    <div className="row"><button className="btn small" onClick={() => { if (!crewName.trim()) { setNotice('Give your crew a name first.'); return } const name = crewName.trim(); setMyCrew((m) => m ? { ...m, name, colour: crewColour, flag: crewFlag, about: crewAbout.trim() } : m); setCrews((cs) => cs.map((c) => c.id === 'mine' ? { ...c, name } : c)); setEditingCrew(false); setNotice('Crew updated.'); }}>Save changes</button><button className="pill" onClick={() => setEditingCrew(false)}>Cancel</button></div>
+                  </div>
+                )}
+                {confirmDisband ? (
+                  <div className="notice" style={{ marginTop: 12 }} role="alert"><p><strong>Disband this crew?</strong> Your crew and its points will be gone.</p><div className="row"><button className="btn small" onClick={disbandCrew}>Yes, disband it</button><button className="pill" onClick={() => setConfirmDisband(false)}>Keep my crew</button></div></div>
+                ) : (
+                  <button className="pill red" style={{ marginTop: 12 }} onClick={() => setConfirmDisband(true)}>Disband crew</button>
+                )}
+              </div>
+            ) : (
+              <div className="card" style={{ marginTop: 14 }}>
+                <span className="tag">Start your own crew</span>
+                <h2 style={{ marginTop: 10 }}>Start your own crew</h2>
+                <p className="muted">Free. Takes seconds. No wallet needed. Pick a name, a colour and a flag — then invite your friends.</p>
+                <div className="field"><label>Crew name</label><input value={crewName} onChange={(e) => setCrewName(e.target.value)} placeholder="e.g. Sunset Sailors" maxLength={30} /></div>
+                <div className="field"><label>Pick a colour</label><div className="row" role="group" aria-label="Crew colour">{CREW_COLOURS.map((col) => (<button key={col} className={`preset${crewColour === col ? ' active' : ''}`} style={{ background: col, width: 44, height: 44, borderRadius: 12 }} onClick={() => setCrewColour(col)} aria-label={`Colour ${col}`}>{crewColour === col ? '✓' : ''}</button>))}</div></div>
+                <div className="field"><label>Pick a flag</label><div className="row" role="group" aria-label="Crew flag">{CREW_FLAGS.map((f) => (<button key={f} className={`preset${crewFlag === f ? ' active' : ''}`} style={{ fontSize: '1.5rem' }} onClick={() => setCrewFlag(f)} aria-label={`Flag ${f}`}>{f}</button>))}</div></div>
+                <div className="field"><label>What is your crew about? (one short line)</label><input value={crewAbout} onChange={(e) => setCrewAbout(e.target.value)} placeholder="e.g. We explore together and help new players" maxLength={80} /></div>
+                <button className="btn" onClick={createCrew}>Create crew</button>
+                <p className="small muted">Free, takes seconds, no wallet needed. Crew points are just for fun — not tokens, not money.</p>
+              </div>
+            )}
+
+            <div className="card" style={{ marginTop: 14 }}>
+              <h2>Join a crew with a code</h2>
+              <p className="muted">Got a code from a friend? Type it here. It looks like CREW-SUNSET-1234.</p>
+              <div className="field"><label>Crew code</label><input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="e.g. CREW-TRENCH-1234" /></div>
+              <button className="btn" style={{ width: 'auto' }} onClick={joinByCode}>Join this crew</button>
+              {joinMsg && <p className="notice" style={{ marginTop: 12 }} role="status">{joinMsg}</p>}
+              <p className="small muted">Try a demo code: CREW-TRENCH-1234, CREW-VAULT-1234 or CREW-REEF-1234.</p>
+            </div>
+
+            <h2 style={{ marginTop: 18 }}>Crews to join</h2>
+            <div className="grid" style={{ marginTop: 10 }}>
+              {crews.filter((c) => c.id !== 'mine').map((c) => (
                 <article key={c.id} className="card">
                   <h3>🏴‍☠️ {c.name}</h3>
-                  <p className="muted">{c.members} members · {c.points.toLocaleString()} crew points (device-local)</p>
+                  <p className="muted">{c.members} members · {c.points.toLocaleString()} crew points (just for fun)</p>
                   <p>Challenge: {c.challenge}</p>
                   <div className="row">
                     {joined.includes(c.id)
                       ? <><button className="pill" onClick={() => go('crew-progress')}>See my progress</button><button className="pill" onClick={() => setDialogId('leave-crew')}>Leave crew</button></>
                       : <button className="btn small" onClick={() => setDialogId('join-crew')}>Join crew</button>}
-                    <button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50 } : x))} disabled={!joined.includes(c.id)}>Complete challenge · +50 XP</button>
+                    <button className="btn small" onClick={() => completeCrewChallenge(c.id)} disabled={!joined.includes(c.id)}>Complete challenge · +50 points</button>
                   </div>
                 </article>
               ))}
@@ -910,10 +1036,10 @@ export default function App() {
             </div>
             <div className="card" style={{ marginTop: 14 }}>
               <h2>What this guide is — and is not</h2>
-              <p className="muted">I answer only from the approved Nexus facts: tiers, splits, vesting, devnet limits. I say “unknown” for odds, rewards, or live deployment status. I am <strong>not</strong> a wallet, an oracle, an investment adviser, an eligibility engine, or an audit. Never paste a seed phrase or sensitive record into me.</p>
+              <p className="muted">I answer only from the approved Nexus facts: small and big joins, invites, when you can take your share, and practice money. I say “unknown” for odds, rewards, or the live launch. I am <strong>not</strong> a wallet, and I cannot check if you are on a list. Never paste a password or secret phrase into me.</p>
               <h3>Test questions — with the correct answers</h3>
               {GUIDE_TESTS.map((t) => (<div key={t.q} className="kv"><span>{t.q}</span><b>{t.a}</b></div>))}
-              <div className="row"><button className="pill" onClick={() => go('faq')}>FAQ — honest answers</button><button className="pill" onClick={() => go('how-it-works')}>How it works</button></div>
+              <div className="row"><button className="pill" onClick={() => go('learn')}>Learn more — the full document</button><button className="pill" onClick={() => go('how-it-works')}>How it works</button></div>
             </div>
           </section>
         )}
@@ -945,7 +1071,7 @@ export default function App() {
               <h2>Three rules</h2>
               <p>1 · Never share a secret phrase or password — not here, not anywhere.<br />2 · Test SOL has no cash value. Nobody can sell you “real” Nexus tokens here.<br />3 · If a deal sounds guaranteed, it is not Nexus.</p>
               <p><strong>Nexus never asks for a seed phrase or private key. Ever.</strong> Any screen that does is not Nexus.</p>
-              <div className="row"><button className="pill" onClick={() => go('wallet-safety')}>Wallet safety — the 5 checks</button><button className="pill" onClick={() => go('mainnet')}>Mainnet readiness</button><button className="pill" onClick={() => go('faq')}>FAQ — honest answers</button></div>
+              <div className="row"><button className="pill" onClick={() => go('learn')}>Learn more — the full document</button><button className="pill" onClick={() => go('recovery')}>Recovery states</button></div>
               <h2>Ask for help</h2>
               <div className="field"><label>What do you need help with?</label><input value={supportMsg} onChange={(e) => setSupportMsg(e.target.value)} placeholder="e.g. I cannot see my vault" /></div>
               <button className="btn" style={{ width: 'auto' }} onClick={() => { if (!supportMsg.trim()) { setNotice('Write a line about the problem first.'); return } setDialogId('support-received') }}>Send the request</button>
@@ -1590,6 +1716,53 @@ export default function App() {
           </section>
         )}
 
+        {page === 'learn' && (
+          <section>
+            <div className="page-head"><p className="eyebrow">Learn more</p><h1>Want the full detail?</h1><p className="muted">Everything from the Nexus document lives here — the money rules, the business plan, and the launch checklist. You do not need any of this to play. It is here when you want it, and out of the way when you do not.</p></div>
+            <div className="grid" style={{ marginTop: 14 }}>
+              <div className="card">
+                <h2>Money &amp; tokens</h2>
+                <p className="muted">How the sale, the shares and the rewards work.</p>
+                <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  <button className="pill" onClick={() => go('token')}>Token economics</button>
+                  <button className="pill" onClick={() => go('flows')}>Referrals &amp; money flows</button>
+                  <button className="pill" onClick={() => go('pricing')}>Pricing &amp; unit economics</button>
+                </div>
+              </div>
+              <div className="card">
+                <h2>The business</h2>
+                <p className="muted">The plan behind Nexus — the model, the costs, the roadmap.</p>
+                <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  <button className="pill" onClick={() => go('canvas')}>Business Model Canvas</button>
+                  <button className="pill" onClick={() => go('models')}>The five scholarly models</button>
+                  <button className="pill" onClick={() => go('operations')}>Operations</button>
+                </div>
+              </div>
+              <div className="card">
+                <h2>Safety &amp; launch</h2>
+                <p className="muted">What is ready, what is not, and how to stay safe.</p>
+                <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  <button className="pill" onClick={() => go('mainnet')}>Network &amp; mainnet readiness</button>
+                  <button className="pill" onClick={() => go('gates')}>Gates, risk &amp; checklists</button>
+                  <button className="pill" onClick={() => go('evidence')}>Evidence classes</button>
+                  <button className="pill" onClick={() => go('wallet-safety')}>Wallet safety</button>
+                </div>
+              </div>
+              <div className="card">
+                <h2>Help &amp; answers</h2>
+                <p className="muted">Short, honest answers — and the people building this.</p>
+                <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  <button className="pill" onClick={() => go('faq')}>FAQ — honest answers</button>
+                  <button className="pill" onClick={() => go('builders')}>For builders &amp; studios</button>
+                  <button className="pill" onClick={() => go('journeys')}>Journey directory</button>
+                  <button className="pill" onClick={() => go('scenarios')}>Prototype scenarios</button>
+                </div>
+              </div>
+            </div>
+            <p className="small muted" style={{ marginTop: 14 }}>Practice only. No real money, no guaranteed returns.</p>
+          </section>
+        )}
+
         {page === 'journeys' && (
           <section>
             <div className="page-head"><p className="eyebrow">Journey directory</p><h1>Eight journeys through Nexus.</h1><p className="muted">Each journey is a path through the prototype, in the order the Figma flows define it.</p></div>
@@ -1616,15 +1789,10 @@ export default function App() {
           <div className="footer-links">
             <button className="linklike" onClick={() => go('home')}>Home</button>
             <button className="linklike" onClick={() => go('how-it-works')}>How it works</button>
-            <button className="linklike" onClick={() => go('ai-guide')}>FAQ</button>
             <button className="linklike" onClick={() => go('terms')}>Terms &amp; privacy</button>
             <button className="linklike" onClick={() => go('safety')}>Safety &amp; support</button>
-            <button className="linklike" onClick={() => go('journeys')}>Journeys</button>
-            <button className="linklike" onClick={() => go('scenarios')}>All pages</button>
+            <button className="linklike" onClick={() => go('learn')}>Learn more — the full document</button>
             <button className="linklike" onClick={() => go('builders')}>For builders &amp; studios</button>
-            <button className="linklike" onClick={() => go('mainnet')}>Mainnet readiness</button>
-            <button className="linklike" onClick={() => go('token')}>Token</button>
-            <button className="linklike" onClick={() => go('faq')}>FAQ</button>
           </div>
           NEXUS / A little curiosity. A new adventure.<br />
           Nexus — practice only, no real money, no guaranteed returns.<br />
@@ -1634,7 +1802,7 @@ export default function App() {
 
       <nav className="bottom-nav" aria-label="Nexus">
         <div className="bottom-nav-inner">
-          {[{ id: 'capsules', label: 'Capsules', icon: '🎁' }, { id: 'vault', label: 'Vault', icon: '🗄️' }, { id: 'earn', label: 'Earn', icon: '🤝' }, { id: 'pirates', label: 'Pirates', icon: '🏴‍☠️' }].map((t) => (
+          {[{ id: 'home', label: 'Home', icon: '🏠' }, { id: 'capsules', label: 'Join', icon: '🎁' }, { id: 'vault', label: 'Vault', icon: '🗄️' }, { id: 'pirates', label: 'Pirates', icon: '🏴‍☠️' }, { id: 'ai-guide', label: 'Help', icon: '💬' }].map((t) => (
             <button key={t.id} className={`bottom-tab${page === t.id ? ' active' : ''}`} onClick={() => go(t.id as PageId)} aria-current={page === t.id ? 'page' : undefined}>
               <span className="tab-icon" aria-hidden="true">{t.icon}</span>{t.label}
             </button>
