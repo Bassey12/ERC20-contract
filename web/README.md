@@ -26,6 +26,41 @@ npm run preview  # serve the production build locally
 Requires Node 18+ and npm. No environment variables, no secrets,
 no keys — never paste a private key anywhere in this project.
 
+## Figma design build (2026-11-27, file "Untitled")
+
+The full Figma design is coded in `src/App.tsx` (pages) and
+`src/lib/dialogs.ts` (all 67 dialog states, one reusable template).
+Design system: warm cream `#FFF3E4`, dark brown `#38271F`, tan 1px
+inside stroke `#DEC9B4`, radius 24px, Grandstander ExtraBold
+headings (Google Fonts), plain sans body. Shared header on every
+page (NEXUS wordmark, "THE PLAYGROUND ON SOLANA", Connect wallet,
+DEVNET badge, Play / For studios / How it works switch) plus the
+transparency banner. Player pill nav (Capsules, Vault, Earn,
+Pirates, Rankings, Activity) and Studio pill nav (Campaigns, Share,
+Launch controls, Business).
+
+- **40 pages**, all reachable: Prototype scenarios index + Journey
+  directory (8 journeys) + AI guide, terms & privacy, business
+  model, campaign management/report, recovery, safety & support,
+  how it works, public campaign, campaign editor/dashboard, studio
+  sign-in, business, launch controls, campaigns, refund center,
+  campaign completed/cancelled/live, crew standings, activity with
+  evidence, referral account, connected vault, crew progress,
+  transaction detail, claim review, airdrop eligibility, capsule
+  opening, wallet connection, capsule review, capsule guide, share,
+  activity, rankings, pirates, earn, vault, capsules.
+- **67 dialog states** in one template (eyebrow "EXAMPLE STATE ·
+  NOT LIVE", tinted details table, guidance, working buttons).
+- **Canonical tiers** (tablet design + v2.0 maths — the desktop
+  ORIGIN/PULSE/APEX pricing was NOT coded): Airdrop free preview ·
+  Retail ≤2 SOL fully claimable · Whale >2 SOL, 72h release,
+  25/15/5/0% penalty, 80% burned / 20% rewards pot.
+- **Original art only**: vertical capsule with lid + star (NOT a
+  sphere with a band — the Figma orbs read as near-copies of a
+  Poké Ball) and an original floating-city-at-sunset hero, CSS/SVG,
+  no external images, no photos of people. One "Link copied" toast
+  only. One responsive codebase, not three breakpoint copies.
+
 ## What is inside
 
 - **Beginner-first redesign (2026-11-24): 4 bottom tabs only,
