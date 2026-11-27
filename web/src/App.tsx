@@ -220,6 +220,15 @@ export default function App() {
   const [crewCopied, setCrewCopied] = useState(false)
   const [editingCrew, setEditingCrew] = useState(false)
   const [confirmDisband, setConfirmDisband] = useState(false)
+  // Pending deposit intent: set when a logged-out player starts a join from
+  // Join, so connecting the wallet returns them to that same join with the
+  // amount kept, instead of dropping them on the Vault page.
+  const [pendingDeposit, setPendingDeposit] = useState<{ amount: string; capsule: string } | null>(null)
+  // Single crew membership: one crew at a time. pendingJoin holds the crew a
+  // player asked to switch to while already in (or owning) a crew.
+  const [pendingJoin, setPendingJoin] = useState<string | null>(null)
+  const [joiningCrew, setJoiningCrew] = useState<string | null>(null)
+  const [leavingCrew, setLeavingCrew] = useState<string | null>(null)
   const [campaigns, setCampaigns] = useState<Campaign[]>(DEMO_CAMPAIGNS)
   const [newStudio, setNewStudio] = useState('')
   const [newCampaign, setNewCampaign] = useState('')
@@ -313,6 +322,17 @@ export default function App() {
     setAddress(fakeAddress()); setConnected(true); setShowWalletSheet(false)
     setNotice('Demo wallet ready. This is practice money only — not real money, and nothing leaves your device.')
     logActivity('Connected the demo wallet.')
+    // Resume a deposit that was interrupted by the wallet step: back to Join
+    // with the amount kept, and straight back to the review step for it.
+    if (pendingDeposit) {
+      const pd = pendingDeposit
+      setPendingDeposit(null)
+      const pdLamports = Math.round((parseFloat(pd.amount) || 0) * LAMPORTS_PER_SOL)
+      setAmountSol(pd.amount); setSelectedCapsule(pd.capsule)
+      go('capsule-review')
+      if (isRetail(totalGross) && !isRetail(totalGross + pdLamports)) setDialogId('crossing-whale')
+      else setDialogId('review-recipients')
+    }
   }
   function disconnect() { setConnected(false); setAddress(''); setDialogId(null); setNotice('Wallet disconnected. Your demo progress stays saved here.'); logActivity('Disconnected the wallet.') }
   function openCapsule(id: string) {
@@ -320,7 +340,7 @@ export default function App() {
     setSelectedCapsule(id); logActivity(`Opened a capsule preview (${id}).`)
   }
   function deposit() {
-    if (!connected) { setShowWalletSheet(true); return }
+    if (!connected) { setPendingDeposit({ amount: amountSol, capsule: selectedCapsule }); setShowWalletSheet(true); return }
     if (finalized) { setDialogId('sale-closed'); return }
     if (amountLamports <= 0) { setDialogId('invalid-contribution'); return }
     if (totalGross + amountLamports > HARD_CAP_SOL * LAMPORTS_PER_SOL) { setDialogId('hardcap'); return }
@@ -344,15 +364,41 @@ export default function App() {
   }
   function openManage(d: Deposit) { setManagedId(d.id); setModalStep('detail'); setLastClaim(null) }
   function closeModal() { setManagedId(null); setModalStep('detail'); setLastClaim(null) }
+  /** Claim from every vault matching `pred` that has something ready to take.
+   *  This is what actually updates the saved share: claimedByVault grows, so
+   *  "ready to take now" falls by exactly what was taken. Returns the totals
+   *  claimed, or null when nothing was ready. */
+  function claimFrom(pred: (d: Deposit) => boolean) {
+    let gross = 0, net = 0, penalty = 0, burnedAmt = 0, escrowAmt = 0, count = 0
+    const next: Record<number, number> = { ...claimedByVault }
+    for (const d of deposits) {
+      if (!pred(d)) continue
+      const c = claimableForDeposit(d)
+      if (c <= 0) continue
+      const p = (!d.isAirdrop && retail)
+        ? { rate: 0, penalty: 0, burned: 0, escrow: 0, net: c }
+        : penaltySplit(c, elapsedSeconds)
+      next[d.id] = (next[d.id] || 0) + c
+      gross += c; net += p.net; penalty += p.penalty; burnedAmt += p.burned; escrowAmt += p.escrow; count++
+    }
+    if (count === 0) return null
+    setClaimedByVault(next); setBurned((b) => b + burnedAmt); setEscrow((e) => e + escrowAmt)
+    const result = { net, penalty, gross, burned: burnedAmt, escrow: escrowAmt }
+    setLastClaim(result)
+    logActivity(`Took ${fmtTokens(net)} tokens${count > 1 ? ` from ${count} vaults` : ''}.`)
+    return result
+  }
+  /** Claim from the vault being managed in the modal, or — when no vault is
+   *  selected (e.g. the claim dialogs on the Claim review page) — from every
+   *  vault that has something ready. Previously the no-vault case returned
+   *  early and the "success" screen showed without anything being claimed. */
   function confirmClaim() {
-    if (!managed) return
-    const c = claimableForDeposit(managed)
-    if (!launched || c <= 0) return
-    const p = retail && !managed.isAirdrop ? { rate: 0, penalty: 0, burned: 0, escrow: 0, net: c } : penaltySplit(c, elapsedSeconds)
-    setClaimedByVault((m) => ({ ...m, [managed.id]: (m[managed.id] || 0) + c }))
-    setBurned((b) => b + p.burned); setEscrow((e) => e + p.escrow)
-    setLastClaim({ net: p.net, penalty: p.penalty, gross: c, burned: p.burned, escrow: p.escrow })
-    setModalStep('success'); logActivity(`Took ${fmtTokens(p.net)} tokens from vault ${managed.vaultId}.`)
+    if (managed) {
+      const r = claimFrom((d) => d.id === managed.id)
+      if (r) { setModalStep('success'); logActivity(`Took ${fmtTokens(r.net)} tokens from vault ${managed.vaultId}.`) }
+      return
+    }
+    claimFrom(() => true)
   }
   function copyLink() {
     if (navigator.clipboard) navigator.clipboard.writeText(inviteLink).catch(() => undefined)
@@ -383,6 +429,14 @@ export default function App() {
     if (id === 'mine') setMyCrew((m) => m ? { ...m, points: m.points + 50 } : m)
     logActivity('Completed a crew challenge · +50 points.')
   }
+  /** One crew at a time. Joining is the only way into a crew; leaving the
+   *  current one (or disbanding your own) is the only way out. */
+  const currentCrewName = myCrew ? myCrew.name : joined.length > 0 ? crews.find((c) => c.id === joined[0])?.name : null
+  function doJoinCrew(target: string) {
+    setJoined((j) => [...j, target]); setJoinMsg('')
+    setNotice(`Welcome aboard — you joined ${crews.find((c) => c.id === target)?.name || 'the crew'}!`)
+    logActivity(`Joined a crew (${crews.find((c) => c.id === target)?.name || target}).`)
+  }
   function joinByCode() {
     const code = joinCode.trim().toUpperCase()
     if (!code) { setJoinMsg('Type a crew code first — it looks like CREW-SUNSET-1234.'); return }
@@ -391,9 +445,32 @@ export default function App() {
     if (!target) { setJoinMsg('We could not find a crew with that code. Check the letters and try again.'); return }
     if (target === 'mine') { setJoinMsg('That is your own crew — you are already the captain.'); return }
     if (joined.includes(target)) { setJoinMsg('You are already in that crew.'); return }
-    setJoined((j) => [...j, target]); setJoinMsg('')
-    setNotice(`Welcome aboard — you joined ${crews.find((c) => c.id === target)?.name || 'the crew'}!`)
-    logActivity(`Joined a crew with code ${code}.`)
+    // Already in a crew (or owning one)? Ask first — never hold two crews.
+    if (myCrew || joined.length > 0) { setPendingJoin(target); setJoinMsg(''); return }
+    doJoinCrew(target)
+  }
+  /** Confirm the switch asked for by pendingJoin: leave the current crew
+   *  (disbanding it if it is yours), then join the new one. */
+  function confirmSwitchCrew() {
+    const target = pendingJoin
+    if (!target) return
+    setPendingJoin(null)
+    if (myCrew) {
+      setCrews((cs) => cs.filter((c) => c.id !== 'mine'))
+      setJoined((j) => j.filter((x) => x !== 'mine'))
+      logActivity(`Left your crew “${myCrew.name}” to join another crew.`)
+      setMyCrew(null); setConfirmDisband(false); setCrewName(''); setCrewAbout('')
+    } else {
+      setJoined([])
+    }
+    doJoinCrew(target)
+  }
+  /** Leave one crew. Your own crew is disbanded; someone else's is just left. */
+  function leaveCrew(id: string) {
+    if (id === 'mine') { disbandCrew(); return }
+    setJoined((j) => j.filter((x) => x !== id))
+    setNotice(`You left ${crews.find((c) => c.id === id)?.name || 'the crew'}. You can join another crew any time.`)
+    logActivity(`Left a crew (${crews.find((c) => c.id === id)?.name || id}).`)
   }
   function disbandCrew() {
     if (!myCrew) return
@@ -422,6 +499,7 @@ export default function App() {
     setDeposits([]); setClaimedByVault({}); setFinalized(false); setLaunched(false); setElapsedHours(0)
     setBurned(0); setEscrow(0); setOpened({}); setOpens({}); setJoined([])
     setCrews(CREWS); setMyCrew(null); setCrewName(''); setCrewAbout(''); setJoinCode(''); setJoinMsg(''); setEditingCrew(false); setConfirmDisband(false)
+    setPendingDeposit(null); setPendingJoin(null); setJoiningCrew(null); setLeavingCrew(null)
     setAirdropResult('idle'); setActivityLog(['Started over — fresh demo.'])
     setDialogId(null); setNotice('Started over. Everything in the demo is fresh.'); go('capsules')
   }
@@ -447,6 +525,10 @@ export default function App() {
     if (a.dialog) {
       if (a.dialog === 'deposit-submitted' && def.id === 'awaiting-approval') { deposit(); return }
       if (a.dialog === 'claim-finalized' && def.id === 'confirm-penalty') { confirmClaim(); setDialogId('claim-finalized'); return }
+      // Small-join and airdrop claim reviews must actually claim — previously
+      // they opened the success screen without moving anything.
+      if (a.dialog === 'claim-finalized' && def.id === 'retail-claim-review') { const r = claimFrom((d) => !d.isAirdrop); setDialogId(r ? 'claim-finalized' : 'nothing-vested'); return }
+      if (a.dialog === 'claim-finalized' && def.id === 'airdrop-claim-review') { const r = claimFrom((d) => !!d.isAirdrop); setDialogId(r ? 'claim-finalized' : 'nothing-vested'); return }
       if (a.dialog === 'registration-finalized' && def.id === 'review-registration') { claimDemoAirdrop(); return }
       if (a.dialog === 'campaign-published' && def.id === 'review-publication') { publishCampaign(); return }
       setDialogId(a.dialog); return
@@ -454,8 +536,23 @@ export default function App() {
     if (a.go) {
       if (a.go === 'wallet' && def.id === 'disconnect-wallet') { disconnect(); return }
       if (a.go === 'capsules' && def.id === 'reset-progress') { resetProgress(); return }
-      if (a.go === 'crew-progress' && def.id === 'join-crew') { if (!joined.includes('trench')) setJoined((j) => [...j, 'trench']); setDialogId(null); go('crew-progress'); return }
-      if (a.go === 'pirates' && def.id === 'leave-crew') { setJoined((j) => j.filter((x) => x !== 'trench')); setDialogId(null); go('pirates'); return }
+      // Choosing a wallet actually connects it — and resumes a pending
+      // deposit if one was interrupted by the wallet step. Previously these
+      // buttons only navigated, so the wallet was never connected at all.
+      if (def.id === 'choose-wallet' || def.id === 'connecting-wallet') { const had = pendingDeposit; connect(); if (!had) { setDialogId(null); go('capsules') } return }
+      if (a.go === 'crew-progress' && def.id === 'join-crew') {
+        const target = joiningCrew
+        setDialogId(null); setJoiningCrew(null)
+        if (!target || joined.includes(target)) { go('crew-progress'); return }
+        if (myCrew || joined.length > 0) { setPendingJoin(target); go('pirates'); return }
+        doJoinCrew(target); go('crew-progress'); return
+      }
+      if (a.go === 'pirates' && def.id === 'leave-crew') {
+        const target = leavingCrew
+        setDialogId(null); setLeavingCrew(null)
+        if (target) leaveCrew(target)
+        go('pirates'); return
+      }
       if (a.go === 'share' && def.id === 'share-adventure') { setDialogId(null); copyLink(); go('share'); return }
       if (a.go === 'studio-signin' && def.id === 'sign-out') { setStudioSignedIn(false); setConnected(false); setDialogId(null); go('studio-signin'); return }
       setDialogId(null); go(a.go as PageId); return
@@ -470,6 +567,99 @@ export default function App() {
   const managedRatio = managed ? ratioForDeposit(managed) : 0
   const char = CAPSULES[charIndex]
   const dialog: DialogDef | null = dialogId ? DIALOG_BY_ID[dialogId] || null : null
+  // Claim (and deposit / crew) dialogs show the player's REAL saved figures,
+  // not the fixed "Example:" figures in dialogs.ts. Computed live, every render.
+  const totalClaimedGross = deposits.reduce((a, d) => a + (claimedByVault[d.id] || 0), 0)
+  const airdropDeposits = deposits.filter((d) => d.isAirdrop)
+  const airdropClaimable = airdropDeposits.reduce((a, d) => a + claimableForDeposit(d), 0)
+  const airdropAlloc = airdropDeposits.reduce((a, d) => a + allocationForDeposit(d), 0)
+  const lastDeposit = deposits[deposits.length - 1]
+  const confirmGross = managed ? managedClaimable : totalClaimable
+  const confirmPenalty = managed
+    ? (managedPreview ?? { rate: 0, penalty: 0, burned: 0, escrow: 0, net: confirmGross })
+    : retail ? { rate: 0, penalty: 0, burned: 0, escrow: 0, net: confirmGross } : penaltySplit(confirmGross, elapsedSeconds)
+  const totalPenalty = retail ? { rate: 0, penalty: 0, burned: 0, escrow: 0, net: totalClaimable } : penaltySplit(totalClaimable, elapsedSeconds)
+  const dialogDetails: [string, string][] = (() => {
+    if (!dialog) return []
+    switch (dialog.id) {
+      case 'retail-claim-review': return [
+        ['Your share', finalized ? `${fmtTokens(totalAllocation)} tokens` : 'Not fixed yet — the sale is still open'],
+        ['Ready to take now', `${fmtTokens(totalClaimable)} tokens`],
+        ['Early cost', 'None — small joins pay no early cost'],
+        ['You keep', `${fmtTokens(totalClaimable)} tokens`],
+      ]
+      case 'whale-claim-review': return [
+        ['Ready to take now', `${fmtTokens(totalClaimable)} tokens`],
+        ['Early cost', totalPenalty.penalty > 0 ? `${fmtTokens(totalPenalty.penalty)} tokens (${totalPenalty.rate}%)` : 'None'],
+        ['You keep', `${fmtTokens(totalPenalty.net)} tokens`],
+      ]
+      case 'airdrop-claim-review': return [
+        ['Your free-tokens share', airdropDeposits.length > 0 ? `${fmtTokens(airdropAlloc)} tokens` : 'No airdrop vault yet'],
+        ['Ready to take now', `${fmtTokens(airdropClaimable)} tokens`],
+        ['Early cost', 'Same as a big join: 25% / 15% / 5% / 0%'],
+        ['Unlock', 'A little at a time over 3 days, like a big join'],
+      ]
+      case 'confirm-penalty': return [
+        ['You take now', `${fmtTokens(confirmGross)} tokens`],
+        ['Early cost', confirmPenalty.penalty > 0 ? `${fmtTokens(confirmPenalty.penalty)} tokens (${confirmPenalty.rate}%)` : 'None'],
+        ['You keep', `${fmtTokens(confirmPenalty.net)} tokens`],
+        ['Burned', `${fmtTokens(confirmPenalty.burned)} tokens — gone forever`],
+        ['Rewards pot', `${fmtTokens(confirmPenalty.escrow)} tokens`],
+      ]
+      case 'claim-finalized': return [
+        ['Taken', lastClaim ? `${fmtTokens(lastClaim.net)} tokens` : 'Nothing taken yet'],
+        ['Early cost', lastClaim && lastClaim.penalty > 0 ? `${fmtTokens(lastClaim.penalty)} tokens` : 'None'],
+        ['Still to take', `${fmtTokens(Math.max(0, totalAllocation - totalClaimedGross))} tokens`],
+      ]
+      case 'nothing-vested': return [
+        ['Ready to take now', `${fmtTokens(totalClaimable)} tokens`],
+        ['Unlocked so far', `${fmtTokens(totalClaimable)} tokens`],
+        ['Next unlock', launched ? 'After 3 days, all of it' : 'After the launch starts, a little at a time over 3 days'],
+      ]
+      case 'allocation-claimed': return [
+        ['Taken', `${fmtTokens(totalClaimedGross)} tokens`],
+        ['Left', `${fmtTokens(Math.max(0, totalAllocation - totalClaimedGross))} tokens`],
+      ]
+      case 'deposit-confirmed': return lastDeposit ? [
+        ['Amount', `${fmtSol(lastDeposit.amount)} SOL`],
+        ['Split', '10% inviter · 2% their inviter · 88% launch'],
+        ['Vault', lastDeposit.vaultId],
+      ] : dialog.details
+      case 'deposit-finalized': return [
+        ['Amount', `${fmtSol(totalGross)} SOL`],
+        ['Share', finalized ? `${fmtTokens(totalAllocation)} tokens` : 'Not fixed yet'],
+        ['Vaults', `${deposits.length}`],
+      ]
+      case 'review-recipients': return [
+        ['Your inviter gets', hasReferrer ? `${fmtSol(split.direct)} SOL (10%)` : '— no inviter, goes to the launch'],
+        ['Their inviter gets', hasReferrer ? `${fmtSol(split.upline)} SOL (2%)` : '— no inviter, goes to the launch'],
+        ['The launch gets', `${fmtSol(split.vault)} SOL (88%)`],
+        ['If no inviter', 'Their share goes to the launch instead'],
+      ]
+      case 'crossing-whale': return [
+        ['You have put in', `${fmtSol(totalGross)} SOL`],
+        ['This join adds', `${fmtSol(amountLamports)} SOL`],
+        ['New total', `${fmtSol(totalGross + amountLamports)} SOL — big join`],
+        ['What changes', 'Your share unlocks over 3 days, with an early cost'],
+      ]
+      case 'hardcap': return [
+        ['Limit', '15,000 SOL in total'],
+        ['Already in', `${fmtSol(totalGross)} SOL`],
+        ['Room left', `${fmtSol(Math.max(0, HARD_CAP_SOL * LAMPORTS_PER_SOL - totalGross))} SOL`],
+      ]
+      case 'leave-crew': return [
+        ['Crew', leavingCrew ? (leavingCrew === 'mine' ? (myCrew?.name || 'Your crew') : (crews.find((c) => c.id === leavingCrew)?.name || 'The crew')) : 'Your crew'],
+        ['What happens', leavingCrew === 'mine' ? 'Your crew is disbanded — it and its points are gone' : 'You leave. Your points stay with the crew.'],
+        ['Join again', 'Any time, from the Pirates page'],
+      ]
+      case 'join-crew': return joiningCrew ? [
+        ['Crew', crews.find((c) => c.id === joiningCrew)?.name || 'The crew'],
+        ['Members', `${crews.find((c) => c.id === joiningCrew)?.members ?? ''}`],
+        ['Challenge', crews.find((c) => c.id === joiningCrew)?.challenge || ''],
+      ] : dialog.details
+      default: return dialog.details
+    }
+  })()
   // Simple main nav — Home, Join, Vault, Earn, Pirates, Help.
   // Everything technical lives behind one "Learn more" link (footer + Help).
   const playerNav: { id: PageId; label: string }[] = [
@@ -641,7 +831,7 @@ export default function App() {
               <button className="btn" onClick={() => {
                 if (amountLamports <= 0) { setDialogId('invalid-contribution'); return }
                 if (totalGross + amountLamports > HARD_CAP_SOL * LAMPORTS_PER_SOL) { setDialogId('hardcap'); return }
-                if (!connected) { setShowWalletSheet(true); return }
+                if (!connected) { setPendingDeposit({ amount: amountSol, capsule: selectedCapsule }); setShowWalletSheet(true); return }
                 if (isRetail(totalGross) && !isRetail(totalGross + amountLamports)) { setDialogId('crossing-whale'); return }
                 setDialogId('review-recipients')
               }}>Review recipients →</button>
@@ -893,6 +1083,13 @@ export default function App() {
               <div className="field"><label>Crew code</label><input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="e.g. CREW-TRENCH-1234" /></div>
               <button className="btn" style={{ width: 'auto' }} onClick={joinByCode}>Join this crew</button>
               {joinMsg && <p className="notice" style={{ marginTop: 12 }} role="status">{joinMsg}</p>}
+              {pendingJoin && (
+                <div className="notice" style={{ marginTop: 12 }} role="alert">
+                  <p><strong>Leave {currentCrewName ? `“${currentCrewName}”` : 'your crew'} and join {crews.find((c) => c.id === pendingJoin)?.name || 'this crew'}?</strong></p>
+                  <p className="small muted">You can only be in one crew at a time.{myCrew ? ' Leaving your own crew disbands it — it and its points will be gone.' : ' You will leave your current crew first.'}</p>
+                  <div className="row"><button className="btn small" onClick={confirmSwitchCrew}>Yes, leave and join</button><button className="pill" onClick={() => setPendingJoin(null)}>Keep my crew</button></div>
+                </div>
+              )}
               <p className="small muted">Try a demo code: CREW-TRENCH-1234, CREW-VAULT-1234 or CREW-REEF-1234.</p>
             </div>
 
@@ -905,8 +1102,8 @@ export default function App() {
                   <p>Challenge: {c.challenge}</p>
                   <div className="row">
                     {joined.includes(c.id)
-                      ? <><button className="pill" onClick={() => go('crew-progress')}>See my progress</button><button className="pill" onClick={() => setDialogId('leave-crew')}>Leave crew</button></>
-                      : <button className="btn small" onClick={() => setDialogId('join-crew')}>Join crew</button>}
+                      ? <><button className="pill" onClick={() => go('crew-progress')}>See my progress</button><button className="pill" onClick={() => { setLeavingCrew(c.id); setDialogId('leave-crew') }}>{c.id === 'mine' ? 'Disband my crew' : 'Leave this crew'}</button></>
+                      : <button className="btn small" onClick={() => { setJoiningCrew(c.id); setDialogId('join-crew') }}>Join crew</button>}
                     <button className="btn small" onClick={() => completeCrewChallenge(c.id)} disabled={!joined.includes(c.id)}>Complete challenge · +50 points</button>
                   </div>
                 </article>
@@ -927,7 +1124,7 @@ export default function App() {
                   <div className="kv"><span>Challenge</span><b>{c.challenge}</b></div>
                   <div className="progress"><div style={{ width: `${Math.min(100, (c.points % 200) / 2)}%` }} /></div>
                   <p className="small muted">Progress is local to this demo. Complete the challenge to earn +50 XP.</p>
-                  <div className="row"><button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50 } : x))}>Complete challenge · +50 XP</button><button className="pill" onClick={() => setDialogId('leave-crew')}>Leave crew</button><button className="pill" onClick={() => setDialogId('reset-progress')}>Reset local progress</button></div>
+                  <div className="row"><button className="btn small" onClick={() => setCrews((cs) => cs.map((x) => x.id === c.id ? { ...x, points: x.points + 50 } : x))}>Complete challenge · +50 XP</button><button className="pill" onClick={() => { setLeavingCrew(c.id); setDialogId('leave-crew') }}>{c.id === 'mine' ? 'Disband my crew' : 'Leave this crew'}</button><button className="pill" onClick={() => setDialogId('reset-progress')}>Reset local progress</button></div>
                 </div>
               ))
             )}
@@ -1881,7 +2078,7 @@ export default function App() {
               <li><strong>Nothing is promised.</strong> Tokens may end up worth nothing, and practice coins you put in cannot be taken back.</li>
             </ul>
             <button className="btn" onClick={connect}>Use the demo wallet — 1 tap</button>
-            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setShowWalletSheet(false)}>Not yet — let me look around first</button>
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => { setPendingDeposit(null); setShowWalletSheet(false) }}>Not yet — let me look around first</button>
           </div>
         </>
       )}
@@ -1897,7 +2094,7 @@ export default function App() {
               <p className="dlg-body">{dialog.body}</p>
             </div>
             <div className={`dlg-details ${dialog.tone === 'fail' || dialog.tone === 'warn' ? 'tone-peach' : dialog.tone === 'confirm' ? 'tone-green' : 'tone-lavender'}`}>
-              {dialog.details.map(([k, v]) => (<div key={k} className="kv"><span>{k}</span><b>{v}</b></div>))}
+              {dialogDetails.map(([k, v]) => (<div key={k} className="kv"><span>{k}</span><b>{v}</b></div>))}
             </div>
             <p className="dlg-guidance">{dialog.guidance}</p>
             <div className="dlg-actions">
