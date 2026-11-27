@@ -1,0 +1,1929 @@
+{
+  "address": "AzTeCHRx16YzPVM3uobj3vLEirqVm5PJGyXpPw3QYD1P",
+  "metadata": {
+    "name": "nexus",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Nexus Anchor program: devnet-first capsule/token launch with two-tier referrals, proportional allocation, 72h vesting and early-claim burns."
+  },
+  "instructions": [
+    {
+      "name": "activate_launch",
+      "docs": [
+        "Start the 72-hour vesting clock. Authority only.",
+        "Requires finalisation AND an executed migration: claims must",
+        "never start before the vault SOL has moved to liquidity /",
+        "treasury, or claimants would hold tokens with no market.",
+        "Can only run once."
+      ],
+      "discriminator": [
+        144,
+        68,
+        158,
+        182,
+        60,
+        132,
+        158,
+        215
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_migration",
+      "docs": [
+        "Cancel a pending migration proposal. Authority only. The",
+        "proposal can be re-made afterwards."
+      ],
+      "discriminator": [
+        88,
+        255,
+        119,
+        245,
+        65,
+        15,
+        188,
+        223
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_sale",
+      "docs": [
+        "Cancel the sale before finalisation. Authority only.",
+        "After cancellation, deposits, finalisation and airdrop",
+        "registration are closed; contributors may `refund` the",
+        "pool-held part of their deposits."
+      ],
+      "discriminator": [
+        82,
+        137,
+        56,
+        136,
+        94,
+        9,
+        205,
+        10
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_airdrop",
+      "docs": [
+        "Claim airdrop tokens that have vested. Linear 72h vesting from",
+        "launch activation, NO early-claim penalty. Registration time",
+        "does not restart the clock."
+      ],
+      "discriminator": [
+        137,
+        50,
+        122,
+        111,
+        89,
+        254,
+        8,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "airdrop",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_escrow",
+          "writable": true
+        },
+        {
+          "name": "contributor_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_locked",
+      "docs": [
+        "Claim vested tokens from a TokenLock. Beneficiary only.",
+        "Linear vesting after the cliff; claims the newly vested",
+        "amount (vested − already claimed)."
+      ],
+      "discriminator": [
+        34,
+        206,
+        181,
+        23,
+        11,
+        207,
+        147,
+        90
+      ],
+      "accounts": [
+        {
+          "name": "token_lock",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  108,
+                  111,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "beneficiary"
+              },
+              {
+                "kind": "arg",
+                "path": "lock_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "beneficiary",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "lock_escrow",
+          "writable": true
+        },
+        {
+          "name": "beneficiary_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "lock_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "claim_presale",
+      "docs": [
+        "Claim presale tokens that have vested.",
+        "",
+        "* Retail (cumulative gross <= 2 SOL): fully claimable after",
+        "finalisation + launch activation.",
+        "* Whale (cumulative gross > 2 SOL): linear vesting over",
+        "259,200 s from `launch_ts`; early claims pay a penalty on",
+        "the newly claimed amount only: 25% <24h, 15% 24–48h,",
+        "5% 48–72h, 0% after. 80% of the penalty is burned with the",
+        "real SPL burn instruction; 20% goes to the rewards escrow.",
+        "* `gross_claimed` is updated by the full gross claim, so the",
+        "same tokens can never be claimed twice."
+      ],
+      "discriminator": [
+        82,
+        240,
+        122,
+        5,
+        109,
+        66,
+        86,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "contributor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "contributor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_escrow",
+          "writable": true
+        },
+        {
+          "name": "rewards_escrow",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "contributor_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_lock",
+      "docs": [
+        "Create a TokenLock grant. Authority only. The `total` tokens",
+        "are moved at creation from the authority's holding into the",
+        "lock escrow (owned by the TokenLock PDA). Total locked across",
+        "all locks is capped at 350M tokens — the 500M remainder minus",
+        "the 150M reserved for liquidity."
+      ],
+      "discriminator": [
+        171,
+        216,
+        92,
+        167,
+        165,
+        8,
+        153,
+        90
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_lock",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  108,
+                  111,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "beneficiary"
+              },
+              {
+                "kind": "arg",
+                "path": "lock_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "source",
+          "docs": [
+            "Authority's holding of the remaining 500M; funds the lock."
+          ],
+          "writable": true
+        },
+        {
+          "name": "lock_escrow",
+          "docs": [
+            "Token account holding the locked tokens. Owner must be the",
+            "TokenLock PDA (it signs releases via its seeds)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "beneficiary",
+          "type": "pubkey"
+        },
+        {
+          "name": "lock_id",
+          "type": "u64"
+        },
+        {
+          "name": "total",
+          "type": "u64"
+        },
+        {
+          "name": "start",
+          "type": "i64"
+        },
+        {
+          "name": "cliff_seconds",
+          "type": "i64"
+        },
+        {
+          "name": "duration_seconds",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "deposit",
+      "docs": [
+        "Accept one SOL contribution.",
+        "",
+        "`direct_referrer` / `upline` are accounts, not bare pubkeys:",
+        "they receive lamports, so they must be passed as mutable",
+        "accounts. Pass the pool authority account for both when there",
+        "is no referrer — the authority address is the no-referral",
+        "sentinel (routing, not an earned founder commission).",
+        "",
+        "`referrer_position` is optional: pass the direct referrer's",
+        "Position account when it exists, so the program can verify the",
+        "upline is the referrer's referrer. Omit it (null) only when the",
+        "referrer has never deposited — then `upline` must be the sentinel."
+      ],
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "contributor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "contributor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "direct_referrer",
+          "docs": [
+            "there is no referrer (sentinel). Receives lamports if valid."
+          ],
+          "writable": true
+        },
+        {
+          "name": "upline",
+          "docs": [
+            "no upline (sentinel). Receives lamports if valid."
+          ],
+          "writable": true
+        },
+        {
+          "name": "referrer_position",
+          "docs": [
+            "The direct referrer's Position, when it exists. Verified",
+            "manually in the handler (PDA + referrer == upline). Pass null",
+            "when the referrer has never deposited."
+          ],
+          "optional": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_lamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "execute_migration",
+      "docs": [
+        "Execute the migration after the timelock. Authority only.",
+        "One-time. Splits the distributable vault SOL (Pool balance",
+        "minus its rent-exempt minimum) 85% to the designated",
+        "DEX-liquidity wallet and 15% to the treasury wallet, and",
+        "transfers exactly 150,000,000 liquidity tokens from the",
+        "authority's holding into the recorded liquidity token escrow.",
+        "The multisig then creates the Raydium CPMM pool off-chain",
+        "from those wallets and records its address."
+      ],
+      "discriminator": [
+        40,
+        232,
+        136,
+        213,
+        182,
+        35,
+        199,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "liquidity_dest",
+          "docs": [
+            "the handler (after the timelock checks) so errors stay specific."
+          ],
+          "writable": true
+        },
+        {
+          "name": "treasury_dest",
+          "writable": true
+        },
+        {
+          "name": "liquidity_token_source",
+          "docs": [
+            "Authority's holding of the remaining 500M; funds the 150M."
+          ],
+          "writable": true
+        },
+        {
+          "name": "liquidity_token_dest",
+          "docs": [
+            "must be pool.migration_liquidity_dest — both verified in the",
+            "handler (see execute_migration). Only the mint is checked here."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "finalize",
+      "docs": [
+        "Close the sale. Authority only. Freezes `total_gross`, which",
+        "fixes every wallet's proportional allocation. Requires the",
+        "token escrow to still hold >= 500M tokens."
+      ],
+      "discriminator": [
+        171,
+        61,
+        218,
+        56,
+        127,
+        115,
+        12,
+        217
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "token_escrow",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "Create the Pool. Authority-gated: the signer becomes",
+        "`pool.authority` and must approve every later authority action.",
+        "",
+        "Gates enforced here (v2.0 Gate 2):",
+        "* mint has 6 decimals, exactly 1,000,000,000 tokens minted, and",
+        "mint + freeze authority revoked;",
+        "* token escrow (owned by the Pool PDA) holds >= 500,000,000",
+        "tokens (400M presale + 100M airdrop).",
+        "The remaining 500M tokens are NOT minted into this escrow. Their",
+        "RECOMMENDED allocation (150M liquidity / 100M ecosystem /",
+        "100M team / 100M treasury / 50M marketing, v2.0 p. 7) requires",
+        "founder approval and a locking/vesting mechanism that does not",
+        "yet exist — it is not created, claimed, or promised here."
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "token_escrow",
+          "writable": true
+        },
+        {
+          "name": "rewards_escrow",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "merkle_root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "pause_deposits",
+      "docs": [
+        "Pause or unpause deposits. Authority only. Claims, refunds",
+        "and migration are never paused."
+      ],
+      "discriminator": [
+        206,
+        186,
+        203,
+        153,
+        253,
+        61,
+        206,
+        122
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "propose_migration",
+      "docs": [
+        "Propose the one-time migration. Authority only. Requires a",
+        "finalised (not cancelled, not launched) sale and no active",
+        "proposal. Sets the destinations and the 72h timelock; nothing",
+        "moves yet. The liquidity token escrow is recorded here and",
+        "must be the same account at execution."
+      ],
+      "discriminator": [
+        90,
+        139,
+        182,
+        57,
+        215,
+        253,
+        223,
+        105
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "liquidity_token_escrow",
+          "docs": [
+            "Token account that will receive the 150M liquidity tokens at",
+            "execution. Mint and owner (must be the designated liquidity",
+            "wallet) are verified in the handler, after the",
+            "already-executed / already-proposed checks, so a second",
+            "proposal after execution surfaces MigrationAlreadyExecuted",
+            "instead of a raw constraint failure."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "liquidity_dest",
+          "type": "pubkey"
+        },
+        {
+          "name": "treasury_dest",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "record_liquidity_pool",
+      "docs": [
+        "Record the DEX pool address after the multisig creates the",
+        "pool off-chain. Authority only, once, only after migration."
+      ],
+      "discriminator": [
+        105,
+        177,
+        230,
+        171,
+        222,
+        105,
+        40,
+        36
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "pool_address",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "refund",
+      "docs": [
+        "Refund one contributor's pool-held deposits after cancellation.",
+        "Pays exactly `position.vault_contribution` from the Pool PDA,",
+        "once. Referral shares already paid out are NOT refundable and",
+        "are not part of `vault_contribution`."
+      ],
+      "discriminator": [
+        2,
+        96,
+        183,
+        251,
+        63,
+        208,
+        46,
+        46
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "contributor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "contributor",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_airdrop",
+      "docs": [
+        "Register an airdrop allocation with a Merkle proof.",
+        "Replay-protected: the Airdrop PDA can only be initialised once.",
+        "The root is immutable in this phase — the approved list must be",
+        "right before `initialize` sets it."
+      ],
+      "discriminator": [
+        78,
+        28,
+        14,
+        238,
+        113,
+        22,
+        204,
+        148
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "airdrop",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "allocation_base_units",
+          "type": "u64"
+        },
+        {
+          "name": "proof",
+          "type": {
+            "vec": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "rotate_authority",
+      "docs": [
+        "Rotate the pool authority to a new pubkey. Current authority",
+        "only. The no-referral sentinel is NOT rotated (see state.rs):",
+        "existing no-referrer positions keep working."
+      ],
+      "discriminator": [
+        248,
+        225,
+        151,
+        35,
+        28,
+        15,
+        85,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_authority",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AirdropAccount",
+      "discriminator": [
+        7,
+        63,
+        138,
+        163,
+        184,
+        223,
+        240,
+        43
+      ]
+    },
+    {
+      "name": "Pool",
+      "discriminator": [
+        241,
+        154,
+        109,
+        4,
+        17,
+        177,
+        109,
+        188
+      ]
+    },
+    {
+      "name": "Position",
+      "discriminator": [
+        170,
+        188,
+        143,
+        228,
+        122,
+        64,
+        247,
+        208
+      ]
+    },
+    {
+      "name": "TokenLock",
+      "discriminator": [
+        73,
+        228,
+        144,
+        241,
+        154,
+        44,
+        93,
+        238
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "MigrationExecuted",
+      "discriminator": [
+        193,
+        16,
+        28,
+        8,
+        106,
+        116,
+        62,
+        121
+      ]
+    },
+    {
+      "name": "MigrationProposed",
+      "discriminator": [
+        56,
+        183,
+        125,
+        61,
+        213,
+        85,
+        120,
+        248
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "ZeroAmount",
+      "msg": "Amount must be greater than zero."
+    },
+    {
+      "code": 6001,
+      "name": "ArithmeticError",
+      "msg": "Arithmetic overflow or underflow (checked arithmetic failed)."
+    },
+    {
+      "code": 6002,
+      "name": "SaleFinalized",
+      "msg": "Sale is already finalised; deposits are closed."
+    },
+    {
+      "code": 6003,
+      "name": "SaleNotFinalized",
+      "msg": "Sale has not been finalised yet."
+    },
+    {
+      "code": 6004,
+      "name": "LaunchNotActivated",
+      "msg": "Launch has not been activated yet."
+    },
+    {
+      "code": 6005,
+      "name": "LaunchAlreadyActivated",
+      "msg": "Launch is already activated."
+    },
+    {
+      "code": 6006,
+      "name": "CapExceeded",
+      "msg": "Deposit would exceed the 15,000 SOL hard cap."
+    },
+    {
+      "code": 6007,
+      "name": "SelfReferral",
+      "msg": "A wallet cannot refer itself."
+    },
+    {
+      "code": 6008,
+      "name": "ReferralCycle",
+      "msg": "Referral ancestry is invalid: upline must be the direct referrer's referrer, or the authority sentinel when the referrer has no referrer."
+    },
+    {
+      "code": 6009,
+      "name": "ReferrerAlreadyBound",
+      "msg": "A wallet's referrer is fixed on its first deposit and cannot be changed."
+    },
+    {
+      "code": 6010,
+      "name": "Unauthorized",
+      "msg": "Caller is not the pool authority."
+    },
+    {
+      "code": 6011,
+      "name": "InvalidMint",
+      "msg": "Mint must have 6 decimals, exactly 1,000,000,000 tokens minted, and no mint or freeze authority."
+    },
+    {
+      "code": 6012,
+      "name": "EscrowUnderfunded",
+      "msg": "Token escrow is underfunded: it must hold at least 500,000,000 tokens (400M presale + 100M airdrop) at finalisation."
+    },
+    {
+      "code": 6013,
+      "name": "NothingClaimable",
+      "msg": "Nothing is claimable yet (vested amount minus already-claimed is zero)."
+    },
+    {
+      "code": 6014,
+      "name": "AlreadyRegistered",
+      "msg": "This wallet has already registered its airdrop allocation (Merkle replay protection)."
+    },
+    {
+      "code": 6015,
+      "name": "InvalidMerkleProof",
+      "msg": "Merkle proof does not match the approved root for this wallet and allocation."
+    },
+    {
+      "code": 6016,
+      "name": "AirdropCapExceeded",
+      "msg": "Airdrop registrations would exceed the 100,000,000-token inventory."
+    },
+    {
+      "code": 6017,
+      "name": "ZeroTotalGross",
+      "msg": "Total gross contributions are zero; allocation is undefined."
+    },
+    {
+      "code": 6018,
+      "name": "SaleCancelled",
+      "msg": "Sale was cancelled before finalisation; deposits and finalisation are closed."
+    },
+    {
+      "code": 6019,
+      "name": "AlreadyRefunded",
+      "msg": "This position has already been refunded; its allocation is void."
+    },
+    {
+      "code": 6020,
+      "name": "RefundNotAvailable",
+      "msg": "Refunds are only available after the sale is cancelled (and only before finalisation)."
+    },
+    {
+      "code": 6021,
+      "name": "NothingToRefund",
+      "msg": "Nothing to refund: this position holds no vault contribution."
+    },
+    {
+      "code": 6022,
+      "name": "DepositsPaused",
+      "msg": "Deposits are paused by the authority."
+    },
+    {
+      "code": 6023,
+      "name": "MigrationNotProposed",
+      "msg": "No migration has been proposed."
+    },
+    {
+      "code": 6024,
+      "name": "MigrationTooEarly",
+      "msg": "The migration timelock has not expired yet."
+    },
+    {
+      "code": 6025,
+      "name": "MigrationAlreadyExecuted",
+      "msg": "Migration has already been executed."
+    },
+    {
+      "code": 6026,
+      "name": "MigrationNotExecuted",
+      "msg": "Migration has not been executed yet."
+    },
+    {
+      "code": 6027,
+      "name": "InvalidMigrationDestination",
+      "msg": "Migration destination is invalid (zero address, or the pool itself)."
+    },
+    {
+      "code": 6028,
+      "name": "InvalidLockParams",
+      "msg": "Token lock parameters are invalid: total and duration must be positive, cliff must be within the duration."
+    },
+    {
+      "code": 6029,
+      "name": "LockBudgetExceeded",
+      "msg": "Token locks would exceed the 350,000,000-token non-liquidity budget."
+    },
+    {
+      "code": 6030,
+      "name": "LiquidityPoolAlreadyRecorded",
+      "msg": "A liquidity pool address has already been recorded."
+    },
+    {
+      "code": 6031,
+      "name": "MigrationAlreadyProposed",
+      "msg": "A migration is already proposed; cancel it before proposing another."
+    },
+    {
+      "code": 6032,
+      "name": "LiquidityFundingShort",
+      "msg": "Liquidity token source holds fewer than 150,000,000 tokens."
+    },
+    {
+      "code": 6033,
+      "name": "InvalidAuthority",
+      "msg": "New authority is invalid (zero address, or unchanged)."
+    }
+  ],
+  "types": [
+    {
+      "name": "AirdropAccount",
+      "docs": [
+        "One airdrop recipient's registration. PDA seeds: [\"airdrop\", wallet]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "allocation",
+            "docs": [
+              "Approved allocation, in base units (from the Merkle list)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "gross_claimed",
+            "docs": [
+              "Gross tokens already claimed, in base units."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MigrationExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "liquidity_sol",
+            "type": "u64"
+          },
+          {
+            "name": "treasury_sol",
+            "type": "u64"
+          },
+          {
+            "name": "liquidity_tokens",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MigrationProposed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "liquidity_dest",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury_dest",
+            "type": "pubkey"
+          },
+          {
+            "name": "execute_after",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pool",
+      "docs": [
+        "Global sale state. PDA seeds: [\"pool\"].",
+        "",
+        "The Pool account itself holds the protocol SOL vault: deposits send",
+        "the vault share directly to this PDA.",
+        "",
+        "Phase 3 (money-out) adds the escape paths that were deliberately",
+        "absent before: vault-portion refunds after a pre-finalise",
+        "cancellation, and a one-time, timelocked migration of the vault",
+        "SOL (85% to a designated DEX-liquidity wallet, 15% to the",
+        "treasury wallet) plus exactly 150,000,000 liquidity tokens.",
+        "See `workspace/goals/nexus-build-and-github-push/files/nexus-phase3-money-out-design.md`",
+        "and `hidden_files/phase3-build-log.md` for the design and the one",
+        "documented deviation (the liquidity share is held by a",
+        "multisig-designated wallet, not a program-owned PDA, because a",
+        "program-owned PDA cannot be spent by the off-chain multisig that",
+        "must create the Raydium pool)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "Authority that may initialise, finalise and activate the launch.",
+              "Production value (public address only, from v2.0):",
+              "BHxkjg3MvcWitw6i2MQDNrCWmC6vqB5U98C3JUk8LmTB",
+              "The program never holds or asks for this key. It is stored at",
+              "`initialize` from the signer, and verified off-chain.",
+              "Meant to be a multisig (e.g. Squads) address on mainnet."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "sentinel",
+            "docs": [
+              "The no-referral sentinel, fixed at `initialize` to the",
+              "authority at that time. It is deliberately NOT rotated with",
+              "`rotate_authority`: existing positions store this address as",
+              "their referrer, and rotating it would break their repeat",
+              "deposits. The sentinel is routing, never a privilege."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "docs": [
+              "The NEXUS SPL mint (6 decimals, 1B supply, authorities revoked)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token_escrow",
+            "docs": [
+              "Token account holding the 400M presale + 100M airdrop escrow.",
+              "Owner must be this Pool PDA."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "rewards_escrow",
+            "docs": [
+              "Token account receiving the 20% rewards share of whale penalties.",
+              "Owner must be this Pool PDA."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "total_gross",
+            "docs": [
+              "Sum of all accepted gross contributions, in lamports."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "sale_finalized",
+            "docs": [
+              "True once `finalize` has run. Deposits are rejected after this."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "launch_activated",
+            "docs": [
+              "True once `activate_launch` has run."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "launch_ts",
+            "docs": [
+              "Unix timestamp set by `activate_launch`; the 72h vesting clock",
+              "starts here. 0 until activation."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "merkle_root",
+            "docs": [
+              "Merkle root of the approved airdrop list. Immutable in this phase:",
+              "a mistake in the list cannot be casually fixed after `initialize`."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "airdrop_registered_total",
+            "docs": [
+              "Sum of airdrop allocations registered so far, in base units.",
+              "Capped at 100,000,000 tokens."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "airdrop_claimed_total",
+            "docs": [
+              "Sum of airdrop tokens gross-claimed so far, in base units.",
+              "Capped at 100,000,000 tokens."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "sale_cancelled",
+            "docs": [
+              "True once `cancel_sale` has run (only before finalisation).",
+              "Deposits, finalisation and airdrop registration are closed."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "deposits_paused",
+            "docs": [
+              "True while `pause_deposits` is in effect. Deposits only:",
+              "claims, refunds and migration are never paused."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "locked_tokens_total",
+            "docs": [
+              "Sum of tokens locked in TokenLock accounts, in base units.",
+              "Capped at 350,000,000 (the 500M remainder minus the 150M",
+              "reserved for liquidity)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "migration_proposed_at",
+            "docs": [
+              "Unix timestamp of `propose_migration`. 0 when no proposal active."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "migration_execute_after",
+            "docs": [
+              "Earliest `execute_migration` time (proposed_at + 72h). 0 when none."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "migration_liquidity_dest",
+            "docs": [
+              "Designated DEX-liquidity wallet (multisig). Receives 85% of the",
+              "distributable vault SOL at execution."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "migration_treasury_dest",
+            "docs": [
+              "Treasury wallet (multisig). Receives 15% at execution."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "liquidity_token_escrow",
+            "docs": [
+              "Token account that receives the 150M liquidity tokens at",
+              "execution. Owner must be `migration_liquidity_dest`."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "migration_sol_liquidity",
+            "docs": [
+              "Lamports sent to the liquidity destination at execution. 0 until then."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "migration_sol_treasury",
+            "docs": [
+              "Lamports sent to the treasury at execution. 0 until then."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "migration_executed",
+            "docs": [
+              "True once `execute_migration` has run. Migration is one-time."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "liquidity_pool_address",
+            "docs": [
+              "DEX pool address recorded by `record_liquidity_pool` after the",
+              "multisig creates the pool off-chain. Default (zero) until then."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury_withdrawn_total",
+            "docs": [
+              "Total SOL ever sent to the treasury (the migration share only;",
+              "there is no second withdrawal path from the Pool)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Position",
+      "docs": [
+        "One contributor's position. PDA seeds: [\"position\", contributor].",
+        "",
+        "`gross_contribution` is cumulative: tier is decided by the total,",
+        "so splitting one big purchase into small payments does not preserve",
+        "retail status. `allocation` is NOT stored here — it is computed",
+        "deterministically at claim time as",
+        "`gross / pool.total_gross * 400,000,000 tokens` (see nexus-math),",
+        "which is exactly the allocation `finalize` fixes, because",
+        "`total_gross` is frozen by finalisation.",
+        "",
+        "Phase 3: `vault_contribution` tracks exactly how many lamports of",
+        "this contributor's deposits actually landed in the Pool (the vault",
+        "share of each deposit, including redirected referral shares).",
+        "That is the refundable amount if the sale is cancelled before",
+        "finalisation. Referral shares already paid out are NOT refundable",
+        "and are NOT included here."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "contributor",
+            "type": "pubkey"
+          },
+          {
+            "name": "gross_contribution",
+            "docs": [
+              "Cumulative accepted gross contribution, in lamports."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "referrer",
+            "docs": [
+              "Direct referrer, or the pool authority address as the",
+              "no-referral sentinel. Bound on first deposit, never changed."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "upline",
+            "docs": [
+              "Referrer's referrer, or the pool authority sentinel."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "gross_claimed",
+            "docs": [
+              "Gross tokens already claimed (presale), in base units.",
+              "Prevents the same allocation being extracted twice."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "vault_contribution",
+            "docs": [
+              "Lamports of this contributor's deposits held in the Pool vault.",
+              "Refundable (once) if the sale is cancelled before finalisation."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "refunded",
+            "docs": [
+              "True once `refund` has run. Allocation is void after a refund."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenLock",
+      "docs": [
+        "One locked token grant. PDA seeds:",
+        "[\"token_lock\", beneficiary, lock_id (u64 LE)].",
+        "",
+        "Linear vesting after a cliff: nothing vests before",
+        "`start + cliff_seconds`; after that, `total` vests linearly over",
+        "`duration_seconds`. The locked tokens sit in a token account",
+        "owned by this PDA (`lock_escrow`), funded once at `create_lock`",
+        "from the authority's holding of the remaining 500M. `claimed`",
+        "tracks what the beneficiary has already taken, so the same",
+        "tokens can never be claimed twice."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "beneficiary",
+            "docs": [
+              "Wallet that may claim the vested tokens."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "docs": [
+              "The NEXUS SPL mint."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "total",
+            "docs": [
+              "Total locked amount, in base units."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "start",
+            "docs": [
+              "Unix timestamp vesting is measured from."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "cliff_seconds",
+            "docs": [
+              "Seconds after `start` before anything vests (0 = no cliff)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "duration_seconds",
+            "docs": [
+              "Seconds of linear vesting after the cliff."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "claimed",
+            "docs": [
+              "Base units already claimed."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

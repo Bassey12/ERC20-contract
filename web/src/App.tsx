@@ -1,10 +1,17 @@
 import { useMemo, useState } from 'react'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { useWalletModal } from '@solana/wallet-adapter-react-ui'
 import {
   AIRDROP_TOKENS, HARD_CAP_SOL, LAMPORTS_PER_SOL, PRESALE_TOKENS, TOTAL_SUPPLY,
   allocationFor, claimableNow, fmtSol, fmtTokens,
   isRetail, penaltyRatePercent, penaltySplit, referralSplit,
   vestedAmount, workedChecks,
 } from './lib/math'
+import {
+  MINT, POOL_PDA, PROGRAM_ID, explorerAccount, explorerTx,
+  isClaimOpen, migrationLine, shortAddr, useLiveNexus,
+  type LiveNexus,
+} from './lib/live'
 import { BADGES, CAPSULES, CREWS, DEMO_AIRDROP, DEMO_CAMPAIGNS, PACKAGES, PLACES, guideAnswer } from './lib/data'
 import { DIALOGS, DIALOG_BY_ID } from './lib/dialogs'
 import { BULLSEYE, CANVAS, CANVAS_TEST, DELIVERY_CHECKLISTS, DEVNET_FIRST, EVIDENCE, FAQ, GATES, GUIDE_TESTS, MODELS, PIRATES_RULES, PRICING_ROWS, PREPAYMENT_BLOCKERS, RISK_REGISTER, SCENARIOS, SOPS, TEAM, TECH_CHECKLIST, COMM_CHECKLIST, TX_STATUSES, WALLET_SAFETY } from './lib/v2'
@@ -187,6 +194,36 @@ function HeroCity() {
   )
 }
 
+/** Live on devnet — read from the chain, never from the demo.
+ *  Shown on Home and Help. The Pool loads on mount (no wallet needed);
+ *  the numbers here are real devnet state, labelled as such. */
+function LiveDevnetPanel({ live }: { live: LiveNexus }) {
+  const pool = live.pool
+  return (
+    <section className="card" style={{ marginTop: 14 }}>
+      <p className="eyebrow">Live on devnet</p>
+      <h2>The real sale, read from the chain</h2>
+      {live.poolStatus === 'loading' && <p className="muted">Checking the live sale…</p>}
+      {live.poolStatus === 'error' && (
+        <p className="notice" role="status">{live.poolError || 'The live sale could not be read from devnet just now.'}</p>
+      )}
+      {pool && (
+        <>
+          <div className="kv"><span>Raised in total</span><b>{fmtSol(pool.totalRaisedLamports)} SOL</b></div>
+          <div className="kv"><span>Sale</span><b>{pool.finalized ? 'Closed — shares are fixed' : 'Open'}</b></div>
+          <div className="kv"><span>Launch</span><b>{pool.launchActivated ? 'Started' : 'Not started yet — planned Mon 30 Nov'}</b></div>
+          <div className="kv"><span>Money moves</span><b>{pool.migrationProposed ? migrationLine(pool) : 'Migration not proposed yet'}</b></div>
+        </>
+      )}
+      <div className="kv"><span>Program</span><b><code>{shortAddr(PROGRAM_ID)}</code> <a href={explorerAccount(PROGRAM_ID)} target="_blank" rel="noreferrer">View ↗</a></b></div>
+      <div className="kv"><span>Token</span><b><code>{shortAddr(MINT)}</code> <a href={explorerAccount(MINT)} target="_blank" rel="noreferrer">View ↗</a></b></div>
+      <div className="kv"><span>Pool</span><b><code>{shortAddr(POOL_PDA)}</code> <a href={explorerAccount(POOL_PDA)} target="_blank" rel="noreferrer">View ↗</a></b></div>
+      <div className="row"><button className="pill" onClick={() => void live.refresh()}>Refresh live data</button></div>
+      <p className="small muted">Devnet only — test SOL, no cash value. These numbers come from the chain, not from this demo.</p>
+    </section>
+  )
+}
+
 export default function App() {
   const [page, setPage] = useState<PageId>('home')
   const [mode, setMode] = useState<'play' | 'studio'>('play')
@@ -266,6 +303,23 @@ export default function App() {
   const [supportMsg, setSupportMsg] = useState('')
   const [launchSteps, setLaunchSteps] = useState<Record<string, boolean>>({})
 
+  // ---- Live devnet layer (src/lib/live.ts) ----
+  // Real wallet = live mode. The demo wallet below = practice mode only.
+  // Never mix the two: live figures come from chain reads, practice
+  // figures from the simulated state above.
+  const { publicKey: liveKey, connected: liveConnected, disconnect: liveDisconnect } = useWallet()
+  const { setVisible: setWalletModalVisible } = useWalletModal()
+  const live = useLiveNexus()
+  const liveMode = live.liveMode
+  const liveAddress = live.liveAddress
+  const displayAddress = liveMode ? liveAddress : address
+  const anyConnected = liveMode || connected
+  // Live share: gross / live total × 400,000,000 — the same vetted maths.
+  const liveAlloc = liveMode && live.position && live.pool
+    ? allocationFor(live.position.grossLamports, live.pool.totalRaisedLamports)
+    : 0
+  const liveRetail = liveMode && live.position ? isRetail(live.position.grossLamports) : true
+
   const totalGross = useMemo(() => deposits.reduce((a, d) => a + d.amount, 0), [deposits])
   const totalReferral = useMemo(() => deposits.reduce((a, d) => a + d.direct + d.upline, 0), [deposits])
   const retail = isRetail(totalGross)
@@ -277,10 +331,10 @@ export default function App() {
   const badgesEarned = [totalOpens > 0 ? 'first-open' : '', deposits.length > 0 ? 'first-join' : '', copied ? 'first-invite' : '', claimedAny ? 'first-claim' : '', joined.length > 0 ? 'crew-mate' : ''].filter(Boolean)
   const leaderboard = useMemo(() => {
     const rows = crews.map((c) => ({ name: c.name, members: c.members, xp: c.points, you: false }))
-    rows.push({ name: connected ? `You (${address})` : 'You', members: 1, xp, you: true })
+    rows.push({ name: anyConnected ? `You (${liveMode ? shortAddr(displayAddress) : displayAddress})` : 'You', members: 1, xp, you: true })
     rows.sort((a, b) => b.xp - a.xp)
     return rows
-  }, [crews, xp, connected, address])
+  }, [crews, xp, anyConnected, liveMode, displayAddress])
   const myRank = leaderboard.findIndex((r) => r.you) + 1
   const allocationForDeposit = (d: Deposit) => (d.isAirdrop ? d.airdropAllocation || 0 : finalized ? allocationFor(d.amount, totalGross) : 0)
   const unlockedForDeposit = (d: Deposit) => {
@@ -309,7 +363,7 @@ export default function App() {
   const managed = deposits.find((d) => d.id === managedId) || null
   const amountLamports = Math.round((parseFloat(amountSol) || 0) * LAMPORTS_PER_SOL)
   const split = referralSplit(amountLamports, hasReferrer, hasReferrer)
-  const inviteLink = `https://nexus.example/r/${connected ? address : 'demo'}`
+  const inviteLink = `https://nexus.example/r/${liveMode ? liveAddress : connected ? address : 'demo'}`
   const calcLamports = Math.round((parseFloat(calcSol) || 0) * LAMPORTS_PER_SOL)
   const calcSplit = referralSplit(calcLamports, true, true)
   const refundPct = Number(refundDay) <= 0 ? 100 : Number(refundDay) <= 3 ? 50 : 0
@@ -340,6 +394,8 @@ export default function App() {
     setSelectedCapsule(id); logActivity(`Opened a capsule preview (${id}).`)
   }
   function deposit() {
+    // Live mode: the sale has closed on-chain — any deposit would fail.
+    if (liveMode) { setNotice('The sale has closed — deposits are no longer accepted. See your vault for your live share.'); return }
     if (!connected) { setPendingDeposit({ amount: amountSol, capsule: selectedCapsule }); setShowWalletSheet(true); return }
     if (finalized) { setDialogId('sale-closed'); return }
     if (amountLamports <= 0) { setDialogId('invalid-contribution'); return }
@@ -350,6 +406,8 @@ export default function App() {
     logActivity(`Joined with ${fmtSol(amountLamports)} SOL — vault ${d.vaultId} opened.`)
   }
   function checkAirdrop() {
+    // Live mode reads the real list from the chain — see the Airdrop page.
+    if (liveMode) { setNotice('In live mode the list is read from the chain — see the airdrop section above.'); return }
     const name = airdropName.trim().toLowerCase()
     const wallet = airdropWallet.trim().toLowerCase()
     if (!name && !wallet) { setNotice('Type a name or a wallet first, then check the list.'); return }
@@ -358,6 +416,8 @@ export default function App() {
     } else { setAirdropResult('not-found'); setNotice('Not on the list. There is no approved list yet, so nobody can claim free tokens yet.') }
   }
   function claimDemoAirdrop() {
+    // Practice only — live airdrops register on-chain from the Airdrop page.
+    if (liveMode) return
     const d: Deposit = { id: Date.now(), vaultId: newVaultId(), art: 1, label: 'Airdrop vault — demo', amount: 0, direct: 0, upline: 0, vault: 0, referrer: 'Airdrop (demo)', isAirdrop: true, airdropAllocation: DEMO_AIRDROP.tokens * 1_000_000 }
     setDeposits((ds) => [...ds, d]); setAirdropResult('claimed'); setDialogId('registration-finalized')
     logActivity(`Claimed the demo airdrop (${DEMO_AIRDROP.tokens} demo tokens) — vault ${d.vaultId}.`)
@@ -369,6 +429,9 @@ export default function App() {
    *  "ready to take now" falls by exactly what was taken. Returns the totals
    *  claimed, or null when nothing was ready. */
   function claimFrom(pred: (d: Deposit) => boolean) {
+    // Practice only — live claims are not open until the launch (Mon 30 Nov)
+    // and are never simulated with real figures.
+    if (liveMode) return null
     let gross = 0, net = 0, penalty = 0, burnedAmt = 0, escrowAmt = 0, count = 0
     const next: Record<number, number> = { ...claimedByVault }
     for (const d of deposits) {
@@ -534,7 +597,7 @@ export default function App() {
       setDialogId(a.dialog); return
     }
     if (a.go) {
-      if (a.go === 'wallet' && def.id === 'disconnect-wallet') { disconnect(); return }
+      if (a.go === 'wallet' && def.id === 'disconnect-wallet') { if (liveMode) void liveDisconnect(); disconnect(); return }
       if (a.go === 'capsules' && def.id === 'reset-progress') { resetProgress(); return }
       // Choosing a wallet actually connects it — and resumes a pending
       // deposit if one was interrupted by the wallet step. Previously these
@@ -685,12 +748,15 @@ export default function App() {
           <button onClick={() => go('how-it-works')}>How it works</button>
         </div>
         <span className="spacer" style={{ flex: 1 }} />
-        {connected
-          ? <button className="wallet-chip" onClick={() => setDialogId('wallet-menu')}>Demo · {address}</button>
-          : <button className="pill connect-pill" onClick={() => setDialogId('choose-wallet')}>Connect wallet</button>}
+        {liveMode
+          ? <button className="wallet-chip" onClick={() => go('wallet')}>Live · {shortAddr(liveAddress)}</button>
+          : connected
+            ? <button className="wallet-chip" onClick={() => setDialogId('wallet-menu')}>Demo · {address}</button>
+            : <><button className="pill connect-pill" onClick={() => setWalletModalVisible(true)}>Connect wallet</button>
+              <button className="pill" onClick={() => setDialogId('choose-wallet')}>Demo wallet</button></>}
       </div></header>
       <div className="transparency-banner"><div className="transparency-banner-inner">
-        <span><strong>TEST WORLD, REAL TRANSPARENCY.</strong> Test SOL has no cash value. Deposits and claims are gated pending deployment approval.</span>
+        <span><strong>TEST WORLD, REAL TRANSPARENCY.</strong> {liveMode && live.pool?.finalized ? 'The sale has closed. Claims open after the launch on Mon 30 Nov. Test SOL has no cash value.' : 'Test SOL has no cash value. Deposits and claims are gated pending deployment approval.'}</span>
         <button onClick={() => go('learn')}>Learn more →</button>
       </div></div>
 
@@ -751,12 +817,30 @@ export default function App() {
                 )}
               </div>
             </section>
+            <LiveDevnetPanel live={live} />
           </section>
         )}
 
         {page === 'capsules' && (
           <section>
             <div className="page-head"><p className="eyebrow">Capsules</p><h1>Pick your next adventure.</h1><p className="muted">Three ways in. Clear rules all the way. <button className="linklike" onClick={() => go('capsule-guide')}>Read the capsule guide →</button></p></div>
+            {liveMode && live.pool?.finalized && (
+              <div className="card" style={{ marginTop: 14 }}>
+                <p className="eyebrow">Live on devnet · The sale has closed</p>
+                <h2>The sale has closed</h2>
+                <p className="muted">Joining is finished — deposits are no longer accepted, and the chain rejects any deposit. Your share, if you joined, is fixed and waiting in your vault.</p>
+                {live.poolStatus === 'loading' ? (
+                  <p className="muted">Checking the live sale…</p>
+                ) : (
+                  <>
+                    <div className="kv"><span>Raised in total</span><b>{fmtSol(live.pool.totalRaisedLamports)} SOL</b></div>
+                    <div className="kv"><span>Money moves</span><b>{live.pool.migrationProposed ? migrationLine(live.pool) : 'Migration not proposed yet'}</b></div>
+                  </>
+                )}
+                <div className="row"><button className="btn" style={{ width: 'auto' }} onClick={() => go('vault')}>See my vault</button><button className="pill" onClick={() => void live.refresh()}>Refresh</button></div>
+                <p className="small muted">No wallet connected? The Join page below is practice only — pretend coins, nothing real. Connect a real wallet to see your live position.</p>
+              </div>
+            )}
             <div className="grid" style={{ marginTop: 14 }}>
               {CAPSULES.map((c, i) => (
                 <article key={c.id} className="capsule-tile" style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -768,7 +852,9 @@ export default function App() {
                     <p className="small muted">Friend: <b>{c.character}</b> — {c.personality} · Opened {opens[c.id] || 0}×</p>
                     <div className="row">
                       <button className="btn small" onClick={() => { openCapsule(c.id); go('capsule-opening') }}>Open preview</button>
-                      <button className="pill" onClick={() => { setSelectedCapsule(c.id); go('capsule-review') }}>{c.id === 'free' ? 'Review the free capsule' : 'Review & join'}</button>
+                      {liveMode && live.pool?.finalized
+                        ? <button className="pill" onClick={() => go('vault')}>Sale closed — see your vault</button>
+                        : <button className="pill" onClick={() => { setSelectedCapsule(c.id); go('capsule-review') }}>{c.id === 'free' ? 'Review the free capsule' : 'Review & join'}</button>}
                     </div>
                   </div>
                 </article>
@@ -814,6 +900,26 @@ export default function App() {
           <section>
             <div className="page-head"><p className="eyebrow">Capsule review</p><h1>Review before you join.</h1><p className="muted">Check the capsule, the amount and the split — before anything moves.</p></div>
             <div className="card" style={{ marginTop: 14 }}>
+              {liveMode ? (
+                <>
+                  <p className="eyebrow">Live on devnet · The sale has closed</p>
+                  <h2>The sale has closed</h2>
+                  <p className="muted">There is no amount to pick and no deposit to send — the sale is closed on-chain and any deposit would be rejected. Your share, if you joined, is fixed.</p>
+                  {live.poolStatus === 'loading' ? (
+                    <p className="muted">Checking the live sale…</p>
+                  ) : live.pool ? (
+                    <>
+                      <div className="kv"><span>Raised in total</span><b>{fmtSol(live.pool.totalRaisedLamports)} SOL</b></div>
+                      <div className="kv"><span>Money moves</span><b>{live.pool.migrationProposed ? migrationLine(live.pool) : 'Migration not proposed yet'}</b></div>
+                      <div className="kv"><span>Claims open</span><b>After the launch — planned Mon 30 Nov</b></div>
+                    </>
+                  ) : (
+                    <p className="notice" role="status">{live.poolError || 'The live sale could not be read just now.'}</p>
+                  )}
+                  <div className="row"><button className="btn" style={{ width: 'auto' }} onClick={() => go('vault')}>See my vault</button><button className="pill" onClick={() => void live.refresh()}>Refresh</button></div>
+                </>
+              ) : (
+                <>
               <div className="row" role="group" aria-label="Capsule">
                 {CAPSULES.map((c) => (<button key={c.id} className={`preset${selectedCapsule === c.id ? ' active' : ''}`} onClick={() => setSelectedCapsule(c.id)}>{c.name}</button>))}
               </div>
@@ -836,6 +942,8 @@ export default function App() {
                 setDialogId('review-recipients')
               }}>Review recipients →</button>
               <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => go('capsule-opening')}>Open the capsule first</button>
+                </>
+              )}
             </div>
           </section>
         )}
@@ -860,6 +968,73 @@ export default function App() {
         {page === 'vault' && (
           <section>
             <div className="page-head"><p className="eyebrow">Vault</p><h1>Your vaults.</h1><p className="muted">Each join opens a vault. Whoever controls a vault controls that share — in this demo, that is you.</p></div>
+            {liveMode ? (
+              <>
+                {live.poolStatus === 'loading' || live.positionStatus === 'loading' ? (
+                  <div className="card" style={{ marginTop: 14 }}><h2>Checking the live sale…</h2><p className="muted">Reading your position from devnet — this takes a moment. Nothing below is from the demo.</p></div>
+                ) : live.poolStatus === 'error' ? (
+                  <div className="card" style={{ marginTop: 14 }}><h2>Could not read the live sale</h2><p className="muted">{live.poolError || 'Devnet did not answer just now.'}</p><button className="btn" style={{ width: 'auto' }} onClick={() => void live.refresh()}>Try again</button></div>
+                ) : live.positionStatus === 'error' ? (
+                  <div className="card" style={{ marginTop: 14 }}><h2>Could not read your position</h2><p className="muted">Devnet did not answer just now — your position may still be there.</p><button className="btn" style={{ width: 'auto' }} onClick={() => void live.refresh()}>Try again</button></div>
+                ) : live.position ? (
+                  <>
+                    <div className="card" style={{ marginTop: 14 }}>
+                      <div className="stat-label">Your share (fixed when the sale closed)</div>
+                      <div className="stat-num">{live.pool ? `${fmtTokens(liveAlloc)} tokens` : '—'}</div>
+                      <div className="kv"><span>You put in</span><b>{fmtSol(live.position.grossLamports)} SOL</b></div>
+                      <div className="kv"><span>Your join</span><b>{liveRetail ? 'Small — 2 or less' : 'Big — more than 2'}</b></div>
+                      <div className="kv"><span>Raised in total (live)</span><b>{live.pool ? `${fmtSol(live.pool.totalRaisedLamports)} SOL` : '—'}</b></div>
+                      <div className="kv"><span>Wallet</span><b><code>{shortAddr(liveAddress)}</code></b></div>
+                    </div>
+                    <div className="card" style={{ marginTop: 14 }}>
+                      <h2>Take your share</h2>
+                      {live.pool && isClaimOpen(live.pool) ? (
+                        <>
+                          <p className="muted">Claims are open on-chain. Taking your share sends a real devnet transaction from your wallet — your wallet will ask you to approve it, and you can say no any time.</p>
+                          <button className="btn" onClick={() => void live.claimPresale()} disabled={live.claimStatus === 'sending' || live.claimStatus === 'confirming'}>
+                            {live.claimStatus === 'sending' ? 'Waiting for your wallet…' : live.claimStatus === 'confirming' ? 'Confirming on devnet…' : 'Take my share'}
+                          </button>
+                          {live.claimStatus === 'done' && live.claimSig && (
+                            <p className="notice info" style={{ marginTop: 12 }} role="status">Done — your share is on its way to your wallet. <a href={explorerTx(live.claimSig)} target="_blank" rel="noreferrer">View the transaction ↗</a></p>
+                          )}
+                          {live.claimStatus === 'error' && (
+                            <p className="notice" style={{ marginTop: 12 }} role="status">{live.claimError}</p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <p className="muted">Claims are not open yet. They open once the launch runs — planned for Mon 30 Nov, after the money moves (Mon 30 Nov 11:31 WAT).</p>
+                          <div className="kv"><span>Small joins (2 or less)</span><b>Ready in full at launch</b></div>
+                          <div className="kv"><span>Big joins (more than 2)</span><b>A third ready about 12h after launch (Mon 30 Nov, around 23:31 WAT) · all of it after 3 days (Thu 3 Dec, around 11:31 WAT)</b></div>
+                          <button className="btn" disabled>Take my share — not open yet</button>
+                          <p className="small muted">Taking a big share early costs 25% in day 1, 15% in day 2, 5% in day 3, nothing after. Most of the cost disappears forever; a small part goes to the rewards pot.</p>
+                        </>
+                      )}
+                    </div>
+                    <div className="card" style={{ marginTop: 14 }}>
+                      <h2>Pool dashboard 🌊</h2>
+                      <div className="kv"><span>Token supply in total</span><b>{TOTAL_SUPPLY.toLocaleString()} NEXUS</b></div>
+                      <div className="kv"><span>Presale pool</span><b>{PRESALE_TOKENS.toLocaleString()} (40%)</b></div>
+                      <div className="kv"><span>Airdrop pool</span><b>{AIRDROP_TOKENS.toLocaleString()} (10%)</b></div>
+                      <div className="kv"><span>Put in so far (live)</span><b>{live.pool ? `${fmtSol(live.pool.totalRaisedLamports)} SOL of ${HARD_CAP_SOL.toLocaleString()} SOL` : '—'}</b></div>
+                      <div className="kv"><span>Sale</span><b>{live.pool?.finalized ? 'Closed' : 'Open'}</b></div>
+                      <div className="kv"><span>Money moves</span><b>{live.pool?.migrationProposed ? migrationLine(live.pool) : 'Migration not proposed yet'}</b></div>
+                      <div className="row"><button className="pill" onClick={() => void live.refresh()}>Refresh live data</button><button className="pill" onClick={() => go('airdrop-eligibility')}>Free tokens — Airdrop</button><button className="pill" onClick={() => go('claim-review')}>Review a claim</button></div>
+                      <p className="small muted">Live numbers come from the chain. Burned tokens and the rewards pot only move when someone actually takes a share early — nothing has been taken yet.</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="card" style={{ marginTop: 14 }}>
+                    <h2>No position yet</h2>
+                    <p className="muted">This wallet did not join the sale — there is no position for it on devnet. The sale has closed, so it cannot join now.</p>
+                    <div className="kv"><span>Wallet</span><b><code>{shortAddr(liveAddress)}</code></b></div>
+                    <div className="kv"><span>Raised in total (live)</span><b>{live.pool ? `${fmtSol(live.pool.totalRaisedLamports)} SOL` : '—'}</b></div>
+                    <div className="row"><button className="btn" style={{ width: 'auto' }} onClick={() => go('capsules')}>See the sale</button><button className="pill" onClick={() => go('airdrop-eligibility')}>Free tokens — Airdrop</button></div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
             {deposits.length === 0 ? (
               <div className="card" style={{ marginTop: 14 }}><h2>You haven&apos;t joined yet</h2><p className="muted">Your vaults will appear here once you join. Try a free capsule first — it costs nothing.</p><button className="btn" style={{ width: 'auto' }} onClick={() => go('capsules')}>Go to Capsules</button></div>
             ) : (
@@ -916,13 +1091,17 @@ export default function App() {
               <p className="small muted">Burned tokens disappear forever. The rewards pot is set aside for community rewards. Both only move when someone actually takes a share early in this demo.</p>
               <div className="row"><button className="pill" onClick={() => go('airdrop-eligibility')}>Free tokens — Airdrop</button><button className="pill" onClick={() => go('claim-review')}>Review a claim</button></div>
             </div>
+              </>
+            )}
           </section>
         )}
 
         {page === 'connected-vault' && (
           <section>
             <div className="page-head"><p className="eyebrow">Connected Vault</p><h1>One vault, up close.</h1><p className="muted">The vault your wallet is connected to — its share, its unlock, its history.</p></div>
-            {managed ? (
+            {liveMode ? (
+              <div className="card" style={{ marginTop: 14 }}><h2>Your live position is on the Vault page</h2><p className="muted">In live mode there is one real position per wallet — it lives on the Vault page, read from the chain.</p><button className="btn" style={{ width: 'auto' }} onClick={() => go('vault')}>Go to my vault</button></div>
+            ) : managed ? (
               <div className="card" style={{ marginTop: 14 }}>
                 <h2>Vault {managed.vaultId}</h2>
                 <div className="kv"><span>You put in</span><b>{managed.isAirdrop ? '— (free tokens)' : `${fmtSol(managed.amount)} SOL`}</b></div>
@@ -944,6 +1123,24 @@ export default function App() {
           <section>
             <div className="page-head"><p className="eyebrow">Claim review</p><h1>Check before you take it.</h1><p className="muted">Every claim gets a review — retail, whale and airdrop each have their own.</p></div>
             <div className="card" style={{ marginTop: 14 }}>
+              {liveMode ? (
+                <>
+                  <h2>Claims are not open yet</h2>
+                  <p className="muted">Claims open once the launch runs — planned for Mon 30 Nov, after the money moves (Mon 30 Nov 11:31 WAT). Nothing here will send a claim until then.</p>
+                  {live.position ? (
+                    <>
+                      <div className="kv"><span>Your share</span><b>{live.pool ? `${fmtTokens(liveAlloc)} tokens` : '—'}</b></div>
+                      <div className="kv"><span>You put in</span><b>{fmtSol(live.position.grossLamports)} SOL</b></div>
+                      <div className="kv"><span>Your join</span><b>{liveRetail ? 'Small — ready in full at launch' : 'Big — unlocks over 3 days after launch'}</b></div>
+                    </>
+                  ) : (
+                    <p className="muted">This wallet did not join the sale, so there is nothing to claim.</p>
+                  )}
+                  <button className="btn" disabled>Take my share — not open yet</button>
+                  <p className="small muted">Small joins are ready in full at launch. Big joins unlock over 3 days, and taking one early costs 25% / 15% / 5% / 0%.</p>
+                </>
+              ) : (
+                <>
               {deposits.length === 0 ? (<><h2>Nothing to claim yet</h2><p className="muted">Join first, then finalise the sale and start the launch. Claims open after that.</p><button className="btn" style={{ width: 'auto' }} onClick={() => go('capsules')}>Go to Capsules</button></>) : (
                 <>
                   <div className="kv"><span>Ready to take now (all vaults)</span><b>{fmtTokens(totalClaimable)} tokens</b></div>
@@ -959,6 +1156,8 @@ export default function App() {
                   <p className="small muted">The cost applies only to the amount you take now. Waiting until after 3 days costs nothing.</p>
                 </>
               )}
+                </>
+              )}
             </div>
           </section>
         )}
@@ -967,6 +1166,56 @@ export default function App() {
           <section>
             <div className="page-head"><p className="eyebrow">Airdrop eligibility</p><h1>Free tokens — if you are on the list.</h1><p className="muted">Free tokens go only to people on an approved list. <strong>There is no approved list yet, so nobody can claim free tokens yet.</strong></p></div>
             <div className="card" style={{ marginTop: 14 }}>
+              {liveMode ? (
+                <>
+                  <p className="muted">Free tokens go only to people on an approved list. This uses the TEST list from the devnet run — there is no approved production list yet.</p>
+                  <div className="kv"><span>Wallet</span><b><code>{shortAddr(liveAddress)}</code></b></div>
+                  {live.airdropStatus === 'loading' ? (
+                    <p className="muted">Checking the list…</p>
+                  ) : live.airdrop?.registered ? (
+                    <>
+                      <p className="notice info" role="status">✓ You&apos;re on the list — this wallet is registered{live.airdrop.allocationTokens != null ? ` for ${live.airdrop.allocationTokens.toLocaleString('en-US')} free tokens` : ''}.</p>
+                      {live.airdrop.claimedTokens != null && live.airdrop.claimedTokens > 0 && (
+                        <div className="kv"><span>Already taken</span><b>{live.airdrop.claimedTokens.toLocaleString('en-US')} tokens</b></div>
+                      )}
+                      <p className="small muted">Free tokens unlock over 3 days once the launch starts, with no early cost. Claims open after the launch on Mon 30 Nov.</p>
+                      {live.pool && isClaimOpen(live.pool) ? (
+                        <>
+                          <button className="btn" onClick={() => void live.claimAirdrop()} disabled={live.claimStatus === 'sending' || live.claimStatus === 'confirming'}>
+                            {live.claimStatus === 'sending' ? 'Waiting for your wallet…' : live.claimStatus === 'confirming' ? 'Confirming on devnet…' : 'Take free tokens'}
+                          </button>
+                          {live.claimStatus === 'done' && live.claimSig && (
+                            <p className="notice info" style={{ marginTop: 12 }} role="status">Done — your free tokens are on their way. <a href={explorerTx(live.claimSig)} target="_blank" rel="noreferrer">View the transaction ↗</a></p>
+                          )}
+                          {live.claimStatus === 'error' && (
+                            <p className="notice" style={{ marginTop: 12 }} role="status">{live.claimError}</p>
+                          )}
+                        </>
+                      ) : (
+                        <button className="btn" disabled>Take free tokens — not open yet</button>
+                      )}
+                    </>
+                  ) : live.testEntry ? (
+                    <>
+                      <p className="notice info" role="status">This wallet is on the TEST list — {live.testEntry.allocationTokens.toLocaleString('en-US')} free tokens. A TEST entry only, not a real approval.</p>
+                      <button className="btn" style={{ width: 'auto' }} onClick={() => void live.registerAirdrop()} disabled={live.registerStatus === 'sending' || live.registerStatus === 'confirming'}>
+                        {live.registerStatus === 'sending' ? 'Waiting for your wallet…' : live.registerStatus === 'confirming' ? 'Confirming on devnet…' : 'Register on the TEST list'}
+                      </button>
+                      {live.registerStatus === 'done' && live.registerSig && (
+                        <p className="notice info" style={{ marginTop: 12 }} role="status">Done — registered on devnet. <a href={explorerTx(live.registerSig)} target="_blank" rel="noreferrer">View the transaction ↗</a></p>
+                      )}
+                      {live.registerStatus === 'error' && (
+                        <p className="notice" style={{ marginTop: 12 }} role="status">{live.registerError}</p>
+                      )}
+                      <p className="small muted">This sends a real devnet transaction from your wallet and costs a small devnet fee. Your wallet will ask you to approve it — say no any time and nothing happens. Registering does not start the 3-day clock; that starts at launch.</p>
+                    </>
+                  ) : (
+                    <p className="notice" role="status">This wallet is not on the TEST list, so there is no proof to send — a registration would fail on-chain. The real list has not been approved yet, so nobody else can register yet.</p>
+                  )}
+                  <div className="row"><button className="pill" onClick={() => void live.refresh()}>Refresh</button><button className="pill" onClick={() => go('vault')}>Back to Vault</button></div>
+                </>
+              ) : (
+                <>
               <div className="field"><label>Your name</label><input value={airdropName} onChange={(e) => setAirdropName(e.target.value)} placeholder="e.g. Ada" /></div>
               <div className="field"><label>Your wallet (demo name or address)</label><input value={airdropWallet} onChange={(e) => setAirdropWallet(e.target.value)} placeholder="e.g. DemoAda" /></div>
               <div className="row"><button className="btn" style={{ width: 'auto' }} onClick={() => setDialogId('checking-eligibility')}>Check eligibility</button><button className="pill" onClick={checkAirdrop}>Check the list</button></div>
@@ -975,6 +1224,8 @@ export default function App() {
               {airdropResult === 'claimed' && (<p className="notice info" style={{ marginTop: 12 }} role="status">Demo airdrop claimed — see your new airdrop vault on the Vault page. It unlocks over 3 days once the launch starts.</p>)}
               <p className="small muted">Try the demo entry: name <b>Ada Demo</b>, wallet <b>DEMOADA</b>. Any other name or wallet comes back as not on the list — because the real list does not exist yet.</p>
               <div className="row"><button className="pill" onClick={() => setDialogId('missing-proof')}>Missing proof</button><button className="pill" onClick={() => setDialogId('invalid-proof')}>Invalid proof</button><button className="pill" onClick={() => setDialogId('already-registered')}>Already registered</button></div>
+                </>
+              )}
             </div>
           </section>
         )}
@@ -986,8 +1237,14 @@ export default function App() {
               <h2>You both get a share</h2>
               <p><code>{inviteLink}</code></p>
               <button className="btn" onClick={copyLink}>{copied ? 'Copied! ✓' : 'Copy my invite link'}</button>
-              <div className="kv" style={{ marginTop: 12 }}><span>Friends who joined through you</span><b>{deposits.filter((d) => d.direct > 0).length}</b></div>
-              <div className="kv"><span>Your share from invites, so far</span><b>{fmtSol(totalReferral)} SOL</b></div>
+              {liveMode ? (
+                <p className="small muted" style={{ marginTop: 12 }}>Referral shares were paid on-chain when each friend joined — this app does not read them back from the chain. The sale is closed, so no new invites can join through this link.</p>
+              ) : (
+                <>
+                  <div className="kv" style={{ marginTop: 12 }}><span>Friends who joined through you</span><b>{deposits.filter((d) => d.direct > 0).length}</b></div>
+                  <div className="kv"><span>Your share from invites, so far</span><b>{fmtSol(totalReferral)} SOL</b></div>
+                </>
+              )}
             </div>
             <div className="card" style={{ marginTop: 14 }}>
               <h2>Try the numbers</h2>
@@ -1007,10 +1264,14 @@ export default function App() {
             <div className="card" style={{ marginTop: 14 }}>
               <p><code>{inviteLink}</code></p>
               <button className="btn" onClick={copyLink}>{copied ? 'Copied! ✓' : 'Copy my invite link'}</button>
-              <div className="kv" style={{ marginTop: 12 }}><span>Your share from invites</span><b>{fmtSol(totalReferral)} SOL</b></div>
+              {liveMode ? (
+                <p className="small muted" style={{ marginTop: 12 }}>Live mode: referral shares were paid on-chain when each friend joined — this app does not read them back. The sale is closed, so no new invites can join.</p>
+              ) : (
+                <div className="kv" style={{ marginTop: 12 }}><span>Your share from invites</span><b>{fmtSol(totalReferral)} SOL</b></div>
+              )}
               <div className="kv"><span>Levels</span><b>Only 2 — you, and the person who invited you</b></div>
               <h3 style={{ marginTop: 14 }}>Your invites, so far</h3>
-              {deposits.length === 0 ? <p className="muted">No invites yet. Share your link and come back here.</p> : deposits.map((d) => (<div key={d.id} className="kv"><span>{fmtSol(d.amount)} SOL join via {d.referrer} · vault {d.vaultId}</span><b>You got {fmtSol(d.direct)}</b></div>))}
+              {liveMode ? <p className="muted">Invites from the real sale are not listed here — they were paid on-chain at join time.</p> : deposits.length === 0 ? <p className="muted">No invites yet. Share your link and come back here.</p> : deposits.map((d) => (<div key={d.id} className="kv"><span>{fmtSol(d.amount)} SOL join via {d.referrer} · vault {d.vaultId}</span><b>You got {fmtSol(d.direct)}</b></div>))}
               <div className="row"><button className="pill" onClick={() => go('share')}>Share</button><button className="pill" onClick={() => go('earn')}>Back to Earn</button></div>
             </div>
           </section>
@@ -1205,15 +1466,32 @@ export default function App() {
           <section>
             <div className="page-head"><p className="eyebrow">Wallet connection</p><h1>Your wallet.</h1><p className="muted">Connect, switch network, or disconnect. Spending stays unavailable on the wrong network or with no wallet.</p></div>
             <div className="card" style={{ marginTop: 14 }}>
+              {liveMode ? (
+                <>
+                  <div className="kv"><span>Status</span><b>Connected — Live · {shortAddr(liveAddress)}</b></div>
+                  <div className="kv"><span>Wallet</span><b><code>{liveAddress}</code></b></div>
+                  <div className="kv"><span>Network</span><b>Solana devnet (test network)</b></div>
+                  <div className="kv"><span>Balance</span><b>Devnet SOL — test money only, no cash value</b></div>
+                  <div className="row">
+                    <button className="pill" onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText(liveAddress).catch(() => undefined); showToast('Address copied') }}>Copy address</button>
+                    <button className="pill" onClick={() => setDialogId('disconnect-wallet')}>Disconnect wallet</button>
+                    <button className="pill" onClick={() => go('vault')}>See my vault</button>
+                  </div>
+                  <p className="small muted">Live mode reads your real position from devnet. Disconnecting drops back to practice mode — your practice progress stays saved here. Nexus never asks for your secret phrase.</p>
+                </>
+              ) : (
+                <>
               <div className="kv"><span>Status</span><b>{connected ? `Connected — Demo · ${address}` : 'Not connected'}</b></div>
               <div className="kv"><span>Network</span><b>Solana devnet (test network)</b></div>
               <div className="kv"><span>Balance</span><b>Practice coins only — no cash value</b></div>
               <div className="row">
-                {connected ? <><button className="btn" style={{ width: 'auto' }} onClick={() => setDialogId('wallet-menu')}>Account menu</button><button className="pill" onClick={() => setDialogId('disconnect-wallet')}>Disconnect wallet</button></> : <button className="btn" style={{ width: 'auto' }} onClick={() => setDialogId('choose-wallet')}>Choose a wallet</button>}
+                {connected ? <><button className="btn" style={{ width: 'auto' }} onClick={() => setDialogId('wallet-menu')}>Account menu</button><button className="pill" onClick={() => setDialogId('disconnect-wallet')}>Disconnect wallet</button></> : <><button className="btn" style={{ width: 'auto' }} onClick={() => setWalletModalVisible(true)}>Connect a real wallet</button><button className="pill" onClick={() => setDialogId('choose-wallet')}>Use the demo wallet</button></>}
                 <button className="pill" onClick={() => setDialogId('wrong-network')}>Wrong network</button>
                 <button className="pill" onClick={() => setDialogId('connecting-wallet')}>Connecting wallet</button>
               </div>
-              <p className="small muted">Real wallets are not connected in this demo. The demo wallet is practice only, and nothing leaves your device.</p>
+              <p className="small muted">Connect a real wallet above (Phantom or Solflare, on devnet) to see your live position — or use the demo wallet for practice. No wallet installed? Get Phantom or Solflare, switch it to devnet, then connect. The demo wallet is practice only, and nothing leaves your device.</p>
+                </>
+              )}
             </div>
           </section>
         )}
@@ -1238,6 +1516,7 @@ export default function App() {
               {GUIDE_TESTS.map((t) => (<div key={t.q} className="kv"><span>{t.q}</span><b>{t.a}</b></div>))}
               <div className="row"><button className="pill" onClick={() => go('learn')}>Learn more — the full document</button><button className="pill" onClick={() => go('how-it-works')}>How it works</button></div>
             </div>
+            <LiveDevnetPanel live={live} />
           </section>
         )}
 
